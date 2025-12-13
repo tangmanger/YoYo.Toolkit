@@ -25,6 +25,42 @@ namespace YoYo.Toolkit.Input
         private static readonly DependencyProperty IsUpdatingProperty =
            DependencyProperty.RegisterAttached("IsUpdating", typeof(bool),
            typeof(PasswordHelper));
+
+
+
+        public static double GetPlaceHolderX(DependencyObject obj)
+        {
+            return (double)obj.GetValue(PlaceHolderXProperty);
+        }
+
+        public static void SetPlaceHolderX(DependencyObject obj, double value)
+        {
+            obj.SetValue(PlaceHolderXProperty, value);
+        }
+
+        // Using a DependencyProperty as the backing store for PlaceHolderX.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PlaceHolderXProperty =
+            DependencyProperty.RegisterAttached("PlaceHolderX", typeof(double), typeof(PasswordHelper), new PropertyMetadata(16d));
+
+
+
+
+        public static double GetPlaceHolderY(DependencyObject obj)
+        {
+            return (double)obj.GetValue(PlaceHolderYProperty);
+        }
+
+        public static void SetPlaceHolderY(DependencyObject obj, double value)
+        {
+            obj.SetValue(PlaceHolderYProperty, value);
+        }
+
+        // Using a DependencyProperty as the backing store for PlaceHolderY.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty PlaceHolderYProperty =
+            DependencyProperty.RegisterAttached("PlaceHolderY", typeof(double), typeof(PasswordHelper), new PropertyMetadata(15d));
+
+
+
         public static event Action<string, Exception>? ErrorOccurred;
         public static string GetPlaceHolderText(DependencyObject obj)
         {
@@ -212,6 +248,9 @@ namespace YoYo.Toolkit.Input
             {
                 if (isShow)
                 {
+                    var x = GetPlaceHolderX(passwordBox);
+                    var y = GetPlaceHolderY(passwordBox);
+
                     VisualBrush visualBrush = new VisualBrush();
                     visualBrush.TileMode = TileMode.None;
                     visualBrush.AutoLayoutContent = true;
@@ -220,8 +259,8 @@ namespace YoYo.Toolkit.Input
                     visualBrush.Stretch = Stretch.None;
 
                     TranslateTransform translateTransform = new TranslateTransform();
-                    translateTransform.X = 16;
-                    translateTransform.Y = 15;
+                    translateTransform.X = x;
+                    translateTransform.Y = y;
                     visualBrush.Transform = translateTransform;
                     TextBlock textBlock = new TextBlock();
                     textBlock.Margin = new Thickness(5, 5, 8, 0);

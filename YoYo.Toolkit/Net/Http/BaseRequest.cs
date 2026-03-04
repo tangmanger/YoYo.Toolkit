@@ -4,12 +4,13 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Security;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 using YoYo.Toolkit.Net.Enums;
-using System.Net.Http.Headers;
-using System.Net.Security;
 
 namespace YoYo.Toolkit.Net.Http
 {
@@ -111,6 +112,9 @@ namespace YoYo.Toolkit.Net.Http
                         case HttpMethodTypes.GetBody:
                             result = GetBody(BusinessUrl, Data);
                             break;
+                        case HttpMethodTypes.DELETE:
+                            result = Delete(BusinessUrl, Data);
+                            break;
                         default:
                             break;
                     }
@@ -177,6 +181,9 @@ namespace YoYo.Toolkit.Net.Http
                     break;
                 case HttpMethodTypes.GetBody:
                     result = GetBody(BusinessUrl, Data);
+                    break;
+                case HttpMethodTypes.DELETE:
+                    result = Delete(BusinessUrl, Data);
                     break;
                 default:
                     break;
@@ -284,7 +291,7 @@ namespace YoYo.Toolkit.Net.Http
                 using (HttpClient httpClient = new HttpClient())
                 {
                     SetHeader(httpClient);
-                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType);
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType, "UTF-8");
                     var result = httpClient.PostAsync(url, stringContent).Result.Content.ReadAsStringAsync().Result;
                     if (!string.IsNullOrWhiteSpace(result))
                     {
@@ -299,8 +306,37 @@ namespace YoYo.Toolkit.Net.Http
 
             return null;
         }
+        private string? Delete(string apiPath, string data)
+        {
+            string url = $"{RootUrl}{apiPath}";
+            try
+            {
+                StringContent stringContent = new StringContent(data);
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    SetHeader(httpClient);
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType, "UTF-8");
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url)
+                    {
+                        Content = stringContent
+                    };
 
-       
+                   
+                    var result = httpClient.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke($"当前请求:{url}发生错误!", ex);
+            }
+
+            return null;
+        }
+
 
         #endregion
 

@@ -291,7 +291,7 @@ namespace YoYo.Toolkit.Net.Http
                 using (HttpClient httpClient = new HttpClient())
                 {
                     SetHeader(httpClient);
-                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType, "UTF-8");
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType) { CharSet = "UTF-8" };
                     var result = httpClient.PostAsync(url, stringContent).Result.Content.ReadAsStringAsync().Result;
                     if (!string.IsNullOrWhiteSpace(result))
                     {
@@ -315,7 +315,7 @@ namespace YoYo.Toolkit.Net.Http
                 using (HttpClient httpClient = new HttpClient())
                 {
                     SetHeader(httpClient);
-                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType, "UTF-8");
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType) { CharSet= "UTF-8" };
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url)
                     {
                         Content = stringContent

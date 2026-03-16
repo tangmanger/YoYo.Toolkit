@@ -115,6 +115,9 @@ namespace YoYo.Toolkit.Net.Http
                         case HttpMethodTypes.DELETE:
                             result = Delete(BusinessUrl, Data);
                             break;
+                        case HttpMethodTypes.PUT:
+                            result = Put(BusinessUrl, Data);
+                            break;
                         default:
                             break;
                     }
@@ -159,6 +162,8 @@ namespace YoYo.Toolkit.Net.Http
 
         }
 
+       
+
 
         /// <summary>
         /// 同步请求
@@ -184,6 +189,9 @@ namespace YoYo.Toolkit.Net.Http
                     break;
                 case HttpMethodTypes.DELETE:
                     result = Delete(BusinessUrl, Data);
+                    break;
+                case HttpMethodTypes.PUT:
+                    result = Put(BusinessUrl, Data);
                     break;
                 default:
                     break;
@@ -336,6 +344,36 @@ namespace YoYo.Toolkit.Net.Http
             return null;
         }
 
+        private string Put(string apiPath, string data)
+        {
+            string url = $"{RootUrl}{apiPath}";
+            try
+            {
+                StringContent stringContent = new StringContent(data);
+                using (HttpClient httpClient = new HttpClient())
+                {
+                    SetHeader(httpClient);
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType) { CharSet = "UTF-8" };
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, url)
+                    {
+                        Content = stringContent
+                    };
+
+
+                    var result = httpClient.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
+                    if (!string.IsNullOrWhiteSpace(result))
+                    {
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Error?.Invoke($"当前请求:{url}发生错误!", ex);
+            }
+
+            return null;
+        }
 
         #endregion
 

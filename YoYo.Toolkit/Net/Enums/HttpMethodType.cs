@@ -12,5 +12,6 @@ namespace YoYo.Toolkit.Net.Enums
         GET = 1,
         GetBody = 2,
         DELETE = 3,
+        PUT = 4,
     }
 }

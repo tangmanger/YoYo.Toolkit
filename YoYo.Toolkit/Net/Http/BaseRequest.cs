@@ -194,9 +194,8 @@ namespace YoYo.Toolkit.Net.Http
                 response.Data = result;
                 try
                 {
-                    response.IsOk = true;
-
                     response.DeserializeObj();
+                    response.IsOk = true;
                 }
                 catch (Exception ex)
                 {

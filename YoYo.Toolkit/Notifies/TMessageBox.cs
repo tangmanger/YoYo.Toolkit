@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,7 +25,7 @@ namespace YoYo.Toolkit.Notifies
     /// </summary>
     public class TMessageBox
     {
-        
+
         public enum TMessageBoxResult
         {
             None = 0,
@@ -36,29 +36,20 @@ namespace YoYo.Toolkit.Notifies
         }
         public enum MessageLevel
         {
-            /// <summary>
-            /// 信息
-            /// </summary>
             Information = 0,
-            /// <summary>
-            /// 询问
-            /// </summary>
             Question = 1,
-            /// <summary>
-            /// 警告
-            /// </summary>
             Warning = 2,
-            /// <summary>
-            /// 错误
-            /// </summary>
             Error = 3,
-            /// <summary>
-            /// 询问三种zhuangt
-            /// </summary>
             QuestionNo = 4,
             YesNoCancel = 5,
         }
         static Type? windowType;
+        private static Window? _messageBoxOwner;
+        public static Window? MessageBoxOwner
+        {
+            get => _messageBoxOwner;
+            set => _messageBoxOwner = value;
+        }
         public static void Init(Type baseMessageDialog)
         {
             windowType = baseMessageDialog;

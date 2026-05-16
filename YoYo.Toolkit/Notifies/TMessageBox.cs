@@ -82,6 +82,7 @@ namespace YoYo.Toolkit.Notifies
             BaseMessageDialog? messageBox = GetWindow(caption, msg, level) as BaseMessageDialog;
             if (messageBox == null) return TMessageBoxResult.Cancel;
             messageBox.ShowDialog();
+            MessageBoxOwner = null;
             return messageBox.MessageBoxResult;
         }
 
@@ -116,6 +117,7 @@ namespace YoYo.Toolkit.Notifies
                     }
                 });
             }
+            MessageBoxOwner = null;
             return messageBoxResult;
         }
 

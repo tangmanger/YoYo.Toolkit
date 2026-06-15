@@ -139,7 +139,7 @@ namespace YoYo.Toolkit.Net.Http
                     {
                         CloseProcess();
                     }
-                    Error?.Invoke($"请求发生错误{ex}{ex.Message}", ex);
+                    Error?.Invoke($"请求{BusinessUrl}-{Data ?? ""}发生错误{ex}{ex.Message}", ex);
                 }
                 finally
                 {
@@ -162,7 +162,7 @@ namespace YoYo.Toolkit.Net.Http
 
         }
 
-       
+
 
 
         /// <summary>
@@ -322,13 +322,13 @@ namespace YoYo.Toolkit.Net.Http
                 using (HttpClient httpClient = new HttpClient())
                 {
                     SetHeader(httpClient);
-                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType) { CharSet= "UTF-8" };
+                    stringContent.Headers.ContentType = new MediaTypeHeaderValue(ContentType) { CharSet = "UTF-8" };
                     HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, url)
                     {
                         Content = stringContent
                     };
 
-                   
+
                     var result = httpClient.SendAsync(request).Result.Content.ReadAsStringAsync().Result;
                     if (!string.IsNullOrWhiteSpace(result))
                     {

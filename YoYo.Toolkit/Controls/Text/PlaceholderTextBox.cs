@@ -14,23 +14,13 @@ namespace YoYo.Toolkit.Controls.Text
     public class PlaceholderTextBox : TextBox
     {
 
-        VisualBrush? visualBrush = null;
         Border? border = null;
         public PlaceholderTextBox()
         {
-            visualBrush = new VisualBrush();
-            visualBrush.TileMode = TileMode.None;
-            visualBrush.AutoLayoutContent = true;
-            visualBrush.AlignmentX = AlignmentX.Left;
-            visualBrush.AlignmentY = AlignmentY.Top;
-            visualBrush.Stretch = Stretch.None;
-
-            TranslateTransform translateTransform = new TranslateTransform();
-            translateTransform.X = 16;
-            translateTransform.Y = 15;
-            visualBrush.Transform = translateTransform;
             this.IsKeyboardFocusedChanged += PlaceholderTextBox_IsKeyboardFocusedChanged;
             this.TextChanged += PlaceholderTextBox_TextChanged;
+            // 折叠→恢复可见时刷新水印（编辑区收起后重开、清空重录场景，避免复用旧 brush 渲染偏移）
+            this.IsVisibleChanged += PlaceholderTextBox_IsVisibleChanged;
             this.Loaded += PlaceholderTextBox_Loaded;
         }
 
@@ -61,77 +51,68 @@ namespace YoYo.Toolkit.Controls.Text
 
         private void PlaceholderTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (border == null) return;
-            if (string.IsNullOrWhiteSpace(Text))
-            {
-                border.Background = visualBrush;
-            }
-            else
-            {
-                border.Background = Brushes.Transparent;
-            }
+            RefreshPlaceholder();
         }
 
         private void PlaceholderTextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            if (border == null) return;
-            if (string.IsNullOrWhiteSpace(Text))
-            {
-                border.Background = visualBrush;
-            }
-            else
-            {
-                border.Background = Brushes.Transparent;
-            }
+            RefreshPlaceholder();
         }
 
         private void PlaceholderTextBox_Loaded(object sender, RoutedEventArgs e)
         {
-            if (border == null) return;
-            if (visualBrush != null)
-            {
-                TranslateTransform? translateTransform= visualBrush.Transform as TranslateTransform;
-                if(translateTransform != null)
-                {
-                    translateTransform.X = TransformX;
-                    translateTransform.Y = TransformY;
-                }
-            }
-            if (string.IsNullOrWhiteSpace(Text))
-            {
-                border.Background = visualBrush;
-            }
-            else
-            {
-                border.Background = Brushes.Transparent;
-            }
+            RefreshPlaceholder();
         }
 
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
             border = GetTemplateChild("PART_DropButton") as Border;
-            if (border == null) return;
-            if (string.IsNullOrWhiteSpace(Text))
-            {
-                border.Background = visualBrush;
-            }
-            else
-            {
-                border.Background = Brushes.Transparent;
-            }
+            RefreshPlaceholder();
         }
         private void PlaceholderTextBox_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (border == null) return;
             if ((bool)e.NewValue == false && string.IsNullOrWhiteSpace(Text))
             {
-                border.Background = visualBrush;
+                RefreshPlaceholder();
             }
             else
             {
                 border.Background = Brushes.Transparent;
             }
+        }
+
+        /// <summary>
+        /// 按当前参数（PlaceHolderText/TransformX/TransformY）重建占位水印；
+        /// 每次显示均新建 VisualBrush/TextBlock/TranslateTransform（对照 PasswordHelper 每次显示重建的做法），
+        /// 避免复用同一 brush 实例在「折叠→恢复可见」后渲染位置偏移
+        /// </summary>
+        private void RefreshPlaceholder()
+        {
+            if (border == null) return;
+            if (!string.IsNullOrWhiteSpace(Text) || string.IsNullOrEmpty(PlaceHolderText))
+            {
+                border.Background = Brushes.Transparent;
+                return;
+            }
+
+            TextBlock textBlock = new TextBlock();
+            textBlock.Margin = new Thickness(8, 5, 8, 0);
+            textBlock.Visibility = Visibility.Visible;
+            textBlock.FontSize = 14;
+            textBlock.Text = PlaceHolderText;
+            textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C6C6C6"));
+
+            VisualBrush brush = new VisualBrush();
+            brush.TileMode = TileMode.None;
+            brush.AutoLayoutContent = true;
+            brush.AlignmentX = AlignmentX.Left;
+            brush.AlignmentY = AlignmentY.Top;
+            brush.Stretch = Stretch.None;
+            brush.Visual = textBlock;
+            brush.Transform = new TranslateTransform(TransformX, TransformY);
+            border.Background = brush;
         }
 
 
@@ -154,16 +135,7 @@ namespace YoYo.Toolkit.Controls.Text
 
         private static void PlaceHolderTextChangedCallBack(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            TextBlock textBlock = new TextBlock();
-            textBlock.Margin = new Thickness(8, 5, 8, 0);
-            textBlock.Visibility = Visibility.Visible;
-            textBlock.FontSize = 14;
-            var text = e.NewValue.ToString();
-            PlaceholderTextBox placeholderTextBox = (PlaceholderTextBox)d;
-            textBlock.Text = text;
-            textBlock.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#C6C6C6"));
-            if (placeholderTextBox != null && placeholderTextBox.visualBrush != null)
-                placeholderTextBox.visualBrush.Visual = textBlock;
+            (d as PlaceholderTextBox)?.RefreshPlaceholder();
         }
 
 

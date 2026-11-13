@@ -30,3 +30,12 @@ _ReSharper*/
 .vs/
 #Nuget packages folder
 packages/
+
+#NuGet pack output
+artifacts/
+
+#本机发布配置
+**/Properties/PublishProfiles/
+
+#工作区本地数据
+.workbuddy/

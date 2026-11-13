@@ -8,8 +8,32 @@
     <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>
 
+  <!-- NuGet 打包元数据 -->
+  <PropertyGroup>
+    <PackageId>YoYo.Toolkit</PackageId>
+    <Version>1.0.0</Version>
+    <Title>YoYo.Toolkit</Title>
+    <Authors>在梦想路上狂奔的蜗牛</Authors>
+    <Company>YoYo.Toolkit</Company>
+    <Copyright>Copyright (c) 2025 在梦想路上狂奔的蜗牛</Copyright>
+    <Description>面向 WPF 桌面应用的轻量工具集：页面导航框架、HTTP 请求基类、常用控件与设备/加密工具，适用于上位机、工控、仪器类项目。全部基于原生 WPF 实现，除 System.Management 外无第三方依赖。</Description>
+    <PackageTags>wpf;toolkit;navigation;http;controls;hmi;scada;industrial;winapi;dotnet</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/tangmanger/YoYo.Toolkit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/tangmanger/YoYo.Toolkit</PackageProjectUrl>
+    <PackageReleaseNotes>首个正式版本：导航框架、HTTP 请求基类、WPF 控件集、设备信息与加密工具。</PackageReleaseNotes>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Management" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\LICENSE" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

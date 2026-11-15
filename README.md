@@ -373,94 +373,6 @@ var cipher = RSAHelper.AESEncrypt("plain-text", "your-key");
 
 > ⚠️ **命名空间冲突**：本包根命名空间是 `YoYo.Toolkit`，其下已有 `YoYo.Toolkit.System` 等子命名空间。宿主工程若命名为 `YoYo.Toolkit.Sample`、`YoYo.Toolkit.Demo` 这类**以 `YoYo.Toolkit` 为前缀**的名字，XAML 编译时会把你写的 `System.Windows.*` 解析到 `YoYo.Toolkit.System`，报 `CS0234: 命名空间"YoYo.Toolkit.System"中不存在类型或命名空间名"Windows"`。示例工程因此叫 `YoYo.ToolkitSample`（无点号），宿主请避开 `YoYo.Toolkit.*` 前缀。
 
-## 演示与验收
-
-示例程序的壳子本身就是一次导航演示：左侧 8 个 `NavigateModel`，全部由
-`BaseNavigation.GoTo` 驱动，页面用 `INavigateIn` / `INavigateOut` 接管进入与离开。
-
-```bash
-cd YoYo.Toolkit.Sample/bin/Debug/net8.0-windows
-
-# 打开示例程序（左侧导航多页；标题栏右侧月亮/太阳图标切深浅色，Ctrl+T 同效）
-./YoYo.Toolkit.Sample.exe
-
-# 指定落地页；DeviceView 用参数导航进入
-./YoYo.Toolkit.Sample.exe --page ProgressView
-./YoYo.Toolkit.Sample.exe --page DeviceView --param SN-0001
-
-# 整页长图 / 深色令牌
-./YoYo.Toolkit.Sample.exe --page ControlsView --shot out.png --height 1100
-./YoYo.Toolkit.Sample.exe --page ProgressView --shot out-dark.png --height 1100 --dark
-
-# 单独截一个消息框（四级样式核对，绕开模态阻塞）
-./YoYo.Toolkit.Sample.exe --msg Question --shot dialog.png
-./YoYo.Toolkit.Sample.exe --msg Error --dark --shot dialog-dark.png
-
-# 停住全部动画（验证故事板确实停止）
-./YoYo.Toolkit.Sample.exe --page ProgressView --shot paused.png --paused
-
-# 确定态边界值 / 步骤下标
-./YoYo.Toolkit.Sample.exe --page ProgressView --shot det0.png --value 0 --step 0
-
-# 单控件探针：只渲染一个控件，逐套核对几何
-./YoYo.Toolkit.Sample.exe --probe Orbit --probe-size 400 --shot orbit.png
-
-# 逐 Kind 冒烟：模板应用抛不抛异常
-./YoYo.Toolkit.Sample.exe --diag     # 结果写到 documents/diag.txt
-
-# 阵列类 CPU 基线（Release x64）
-./YoYo.Toolkit.Sample.exe --cpu      # 结果写到 documents/cpu.txt
-
-# 控件用法目录（按控件给最小可复制片段，--viewer 的值决定默认选中的控件）
-./YoYo.Toolkit.Sample.exe --viewer ProgressView --shot usage-progress.png
-./YoYo.Toolkit.Sample.exe --viewer ControlsView --dark --shot usage-controls-dark.png
-
-# 连通性冒烟：Options 为 null 的应答不再抛 NRE
-./YoYo.Toolkit.Sample.exe --ping     # 结果写到 documents/ping.txt
-
-# 窗口外框冒烟：读回 DWM 圆角偏好与窗口样式
-./YoYo.Toolkit.Sample.exe --frame    # 结果写到 documents/frame.txt
-```
-
-### 界面里的「控件用法」查看器
-
-页头右上角的「控件用法」（或 `F12`）打开的是**按控件组织的最小用法片段**，不是整页源码：
-
-- 左侧是全库控件目录，打开时自动定位到当前页演示的那个控件；右侧是它的命名空间声明、若干种用法、宿主必读提示；
-- `Services/ControlSamples.cs` 是唯一的内容源：每个条目给「一个属性组的最小可复制 XAML」，覆盖不确定/确定态、错误态、竖排、自定义模板、多值转换器等常踩场景；
-- 只读、可选中局部复制，「复制」按钮把当前控件全部片段（带 `<!-- 01 · ... -->` 注释标题）一次带走，深浅色跟随令牌。
-
-`Services/XamlHighlighter.cs` 是极简着色器（注释 / 字符串 / 标签名 / 属性名 / 尖括号五类 token），
-没有引入 AvalonEdit 之类的第三方编辑器。
-
-### 示例程序的两个前提
-
-1. **导航需要一个服务容器**。`BaseNavigation.GoTo` 会先用 `VMType` 取一次 ViewModel 调
-   `NavigateIn`，再用 `Type` 取一次 View 挂载——两次必须拿到**同一组对象**，否则生命周期钩子会打到
-   没人用的 ViewModel 上。`Services/ShellService.cs` 用几十行缓存实现了这件事，换成
-   `IServiceProvider` 适配器即可。
-2. **除 Progress 外的控件都没有内置主题字典**。`TreeComboBox`、`TProgressRing`、
-   `IconRadioButton`、`PlaceholderTextBox` 必须由宿主提供 `Style`，否则不渲染。
-   `Themes/Controls.xaml` 就是宿主示例，其中几处是踩过的坑：
-   - `PlaceholderTextBox` 靠模板里名为 `PART_DropButton` 的 `Border` 画水印，缺了就没有占位文字。
-     水印是 `VisualBrush`：`TextBlock.Margin` 在自动布局里基本不进内容边界，所以 `TransformX=16`
-     是补输入文字的左内边距、`TransformY` 是补垂直位置，**不是额外偏移**。库默认 `TransformY=15`
-     偏大，会把水印压到输入框下沿被裁；32px 高的输入框里宿主样式设 `TransformY="7"` 才与输入文字
-     同一基线（`Themes/Controls.xaml` 的 `Sample.Placeholder` 已这么做）。改输入框高度时按
-     `(内部高 − 水印字形高) / 2` 重算即可，不用改控件源码；
-   - 表格行若用 `Button` 承载，模板里的 `ContentPresenter` 必须跟随
-     `HorizontalContentAlignment`，否则 `*` 列按内容测量、列宽塌陷；
-   - `IconRadioButton.Icon` 是 `string`，`TemplateBinding` 到 `Path.Data` 不会走类型转换器，
-     需要一个 `string → Geometry` 的转换器。
-
-### 示例程序的字号阶梯
-
-`Themes/Tokens.Light.xaml` 定义 `Sample.Font.*`：Micro 11 / Tiny 12 / Small 13 / Body 14 /
-CardTitle 15 / Title 21 / Hero 25；深色字典只覆盖颜色、共用同一套字号。XAML 里剩余的硬编码
-`FontSize` 与 `Services/XamlHighlighter.cs` 里的代码字号按同一台阶放大，输入框与按钮高度、
-`LineHeight` 同步调整，控件用法查看器的左栏也相应加宽，避免放大后副标题被省略号截断。
-库 `YoYo.Toolkit` 的模板字号不受影响。
-
 ## 项目结构
 
 ```
@@ -494,7 +406,7 @@ YoYo.Toolkit.Sample/          示例程序（工程名不能带 . 前缀，见�
 └─ MainWindow.xaml  WindowChrome 自绘标题栏 + 侧栏 + 页头 + 状态栏
 ```
 
-示例工程见 `YoYo.Toolkit.Sample`。运行 `YoYo.Toolkit.Sample.exe` 打开演示页，命令行参数见文末「演示与验收」。
+示例工程见 `YoYo.Toolkit.Sample`。运行 `YoYo.Toolkit.Sample.exe` 即可打开演示页。
 
 ## 构建与打包
 

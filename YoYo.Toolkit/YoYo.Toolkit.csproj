@@ -11,7 +11,7 @@
   <!-- NuGet 打包元数据 -->
   <PropertyGroup>
     <PackageId>YoYo.Toolkit</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Title>YoYo.Toolkit</Title>
     <Authors>在梦想路上狂奔的蜗牛</Authors>
     <Company>YoYo.Toolkit</Company>
@@ -24,7 +24,7 @@
     <RepositoryUrl>https://github.com/tangmanger/YoYo.Toolkit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://github.com/tangmanger/YoYo.Toolkit</PackageProjectUrl>
-    <PackageReleaseNotes>首个正式版本：导航框架、HTTP 请求基类、WPF 控件集、设备信息与加密工具；新增进度控件（20 种不确定动效 + 确定态 + StepTracker 流程步骤条，自带浅/深令牌与可覆盖模板）。</PackageReleaseNotes>
+    <PackageReleaseNotes>1.0.1：完善示例程序与双主题令牌，进度控件补充 20 种不确定动效与确定态展示，修正 TreeComboBox、NetworkPing、WindowService 若干细节；README 增加界面预览。含导航框架、HTTP 请求基类、WPF 控件集、设备信息与加密工具；进度控件自带浅/深令牌与可覆盖模板。</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\README.nuget.md" Pack="true" PackagePath="\README.md" />
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="Assets\icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>

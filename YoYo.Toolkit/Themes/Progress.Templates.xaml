@@ -1,0 +1,1676 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:p="clr-namespace:YoYo.Toolkit.Controls.Progress"
+                    xmlns:conv="clr-namespace:YoYo.Toolkit.Converters">
+
+    <!--
+        模板字典。全部模板只引用 Progress.* 令牌，不含字面颜色与字面时长。
+        宿主覆盖：在 App.xaml 中定义同名 x:Key 即可，先于本字典被查找。
+
+        约定：模板根为 Grid(PART_Root)，第一列是 Viewbox(固定画布)，第二列是状态文案。
+        视觉状态组必须是 ProgressStates，含 Idle / Running / RunningReduced / Success / Error / Paused。
+    -->
+
+    <!-- 状态文案的通用排版。所有模板共用，避免逐套重复一套触发器。 -->
+    <Style x:Key="Progress.StatusText" TargetType="{x:Type TextBlock}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="12,0,0,0" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="Foreground" Value="{DynamicResource Progress.Brush.InkSecondary}" />
+        <Setter Property="Visibility" Value="Visible" />
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ShowStatusText, RelativeSource={RelativeSource TemplatedParent}}" Value="False">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+            <DataTrigger Binding="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                <Setter Property="Visibility" Value="Collapsed" />
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- 环形确定态需要的弧线几何转换，唯一新增的几何转换器 -->
+    <conv:PercentToArcGeometryConverter x:Key="Progress.PercentToArc" />
+
+    <!-- 0~1 → "68%"，确定态数值文案统一走这里 -->
+    <conv:PercentToTextConverter x:Key="Progress.PercentToText" />
+
+    <!-- 确定态数值排版：等宽字体，读数不跳动 -->
+    <Style x:Key="Progress.ValueText" TargetType="{x:Type TextBlock}">
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{DynamicResource Progress.Font.Caption}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="Foreground" Value="{DynamicResource Progress.Brush.InkSecondary}" />
+    </Style>
+
+    <!-- ============ 兜底 ============ -->
+
+    <ControlTemplate x:Key="Progress.Template.Default" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="4" />
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             StrokeThickness="4"
+                             StrokeDashArray="22.5 59.18"
+                             StrokeStartLineCap="Round"
+                             StrokeEndLineCap="Round" />
+                </Canvas>
+            </Viewbox>
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 环形组 ============ -->
+
+    <!-- 08 · 旋转弧环 -->
+    <ControlTemplate x:Key="Progress.Template.Arc.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ArcRotate"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360"
+                                             Duration="{DynamicResource Progress.Duration.Fast}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success">
+                        <Storyboard>
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ProgressArc"
+                                                           Storyboard.TargetProperty="Visibility">
+                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}" />
+                            </ObjectAnimationUsingKeyFrames>
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SuccessGlyph"
+                                                           Storyboard.TargetProperty="Visibility">
+                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}" />
+                            </ObjectAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="Error">
+                        <Storyboard>
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ProgressArc"
+                                                           Storyboard.TargetProperty="Visibility">
+                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Collapsed}" />
+                            </ObjectAnimationUsingKeyFrames>
+                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ErrorGlyph"
+                                                           Storyboard.TargetProperty="Visibility">
+                                <DiscreteObjectKeyFrame KeyTime="0:0:0" Value="{x:Static Visibility.Visible}" />
+                            </ObjectAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="4" />
+                    <Ellipse x:Name="ProgressArc"
+                             Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             StrokeThickness="4"
+                             StrokeDashArray="22.5 59.18"
+                             StrokeStartLineCap="Round"
+                             StrokeEndLineCap="Round"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="ArcRotate" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Path x:Name="SuccessGlyph"
+                          Data="M 50,62 L 57,69 L 71,53"
+                          Stroke="{DynamicResource Progress.Brush.Success}"
+                          StrokeThickness="4"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Visibility="Collapsed" />
+                    <Path x:Name="ErrorGlyph"
+                          Data="M 53,53 L 67,67 M 67,53 L 53,67"
+                          Stroke="{DynamicResource Progress.Brush.Error}"
+                          StrokeThickness="4"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round"
+                          Visibility="Collapsed" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 12 · 行进虚线环 -->
+    <ControlTemplate x:Key="Progress.Template.MarchingRing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="MarchRotate"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360"
+                                             Duration="{DynamicResource Progress.Duration.Fast}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="7.5" Canvas.Top="7.5" Width="105" Height="105"
+                             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             StrokeThickness="3"
+                             StrokeDashArray="4.67 3.33"
+                             StrokeStartLineCap="Round"
+                             StrokeEndLineCap="Round"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="MarchRotate" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="56.5" Canvas.Top="56.5" Width="7" Height="7"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             Opacity="0.7" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 19 · 对流双环 -->
+    <ControlTemplate x:Key="Progress.Template.DualRing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="DualOuter"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                            <DoubleAnimation Storyboard.TargetName="DualInner"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="360" To="0"
+                                             Duration="{DynamicResource Progress.Duration.Medium}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <!-- 外圈：10:30 → 4:30 的半弧（左上经右到右下），顺时针 1.4s -->
+                    <Path Data="M 98.89,21.11 A 55,55 0 0 1 21.11,98.89"
+                          Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                          StrokeThickness="3"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round">
+                        <Path.RenderTransform>
+                            <!-- 半弧包围盒只有一半，RenderTransformOrigin 会把轴放到矩形中心，必须显式给环心 -->
+                            <RotateTransform x:Name="DualOuter" CenterX="60" CenterY="60" />
+                        </Path.RenderTransform>
+                    </Path>
+                    <!-- 内圈：4:30 → 10:30 的半弧，与外圈留 13px 间隙，逆时针 1.9s -->
+                    <Path Data="M 30.30,90.30 A 42,42 0 0 1 89.70,30.30"
+                          Stroke="{DynamicResource Progress.Brush.Secondary}"
+                          StrokeThickness="3"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round">
+                        <Path.RenderTransform>
+                            <RotateTransform x:Name="DualInner" CenterX="60" CenterY="60" />
+                        </Path.RenderTransform>
+                    </Path>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 24 · 流光环 -->
+    <ControlTemplate x:Key="Progress.Template.GlowRing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="GlowRotate"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="3" />
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             StrokeThickness="3"
+                             StrokeDashArray="105 3.9"
+                             StrokeStartLineCap="Round"
+                             StrokeEndLineCap="Round"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.OpacityMask>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="Transparent" Offset="0" />
+                                <GradientStop Color="#40FFFFFF" Offset="0.42" />
+                                <GradientStop Color="Black" Offset="1" />
+                            </LinearGradientBrush>
+                        </Ellipse.OpacityMask>
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="GlowRotate" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 条形组 ============ -->
+
+    <!-- 07 · 流动扫光条 -->
+    <ControlTemplate x:Key="Progress.Template.FlowBar.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="FlowShift"
+                                             Storyboard.TargetProperty="(TranslateTransform.X)"
+                                             From="-128" To="320"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Border Width="320" Height="20" ClipToBounds="True">
+                    <Canvas Width="320" Height="20">
+                        <Rectangle Canvas.Left="0" Canvas.Top="8" Width="320" Height="4"
+                                   RadiusX="2" RadiusY="2"
+                                   Fill="{DynamicResource Progress.Brush.Track}" />
+                        <Rectangle Canvas.Left="0" Canvas.Top="8" Width="128" Height="4"
+                                   RadiusX="2" RadiusY="2"
+                                   Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Rectangle.OpacityMask>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="Transparent" Offset="0" />
+                                    <GradientStop Color="Black" Offset="0.5" />
+                                    <GradientStop Color="Transparent" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.OpacityMask>
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="FlowShift" />
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Canvas>
+                </Border>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 13 · 对向游走 -->
+    <ControlTemplate x:Key="Progress.Template.CounterFlow.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ForwardShift"
+                                             Storyboard.TargetProperty="(TranslateTransform.X)"
+                                             From="-102" To="320"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                            <DoubleAnimation Storyboard.TargetName="BackwardShift"
+                                             Storyboard.TargetProperty="(TranslateTransform.X)"
+                                             From="320" To="-102"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Border Width="320" Height="20" ClipToBounds="True">
+                    <Canvas Width="320" Height="20">
+                        <Rectangle Canvas.Left="0" Canvas.Top="8" Width="320" Height="4"
+                                   RadiusX="2" RadiusY="2"
+                                   Fill="{DynamicResource Progress.Brush.Track}" />
+                        <Rectangle Canvas.Left="0" Canvas.Top="8" Width="102" Height="4"
+                                   RadiusX="2" RadiusY="2"
+                                   Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="ForwardShift" />
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                        <Rectangle Canvas.Left="0" Canvas.Top="8" Width="102" Height="4"
+                                   RadiusX="2" RadiusY="2" Opacity="0.55"
+                                   Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="BackwardShift" />
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Canvas>
+                </Border>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 22 · 屏幕扫描 -->
+    <ControlTemplate x:Key="Progress.Template.Scan.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ScanShift"
+                                             Storyboard.TargetProperty="(TranslateTransform.Y)"
+                                             From="2" To="80"
+                                             Duration="{DynamicResource Progress.Duration.Slow}"
+                                             AutoReverse="True"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Grid Width="150" Height="96">
+                    <Border CornerRadius="10"
+                            Background="{DynamicResource Progress.Brush.Track}"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource Progress.Brush.Guide}"
+                            ClipToBounds="True">
+                        <Canvas Width="148" Height="94">
+                            <!-- 被扫描的内容示意，让扫描线有可读对象 -->
+                            <Rectangle Canvas.Left="16" Canvas.Top="20" Width="72" Height="6" RadiusX="3" RadiusY="3"
+                                       Fill="{DynamicResource Progress.Brush.Guide}" />
+                            <Rectangle Canvas.Left="16" Canvas.Top="34" Width="112" Height="4" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource Progress.Brush.Guide}" />
+                            <Rectangle Canvas.Left="16" Canvas.Top="46" Width="96" Height="4" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource Progress.Brush.Guide}" />
+                            <Rectangle Canvas.Left="16" Canvas.Top="58" Width="104" Height="4" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource Progress.Brush.Guide}" />
+                            <Rectangle Canvas.Left="16" Canvas.Top="70" Width="60" Height="4" RadiusX="2" RadiusY="2"
+                                       Fill="{DynamicResource Progress.Brush.Guide}" />
+
+                            <Canvas Width="148" Height="94">
+                                <Canvas.RenderTransform>
+                                    <TranslateTransform x:Name="ScanShift" Y="12" />
+                                </Canvas.RenderTransform>
+                                <!-- 光带 + 扫描线：光带给厚度，扫描线给边界 -->
+                                <Rectangle Canvas.Left="0" Canvas.Top="0" Width="148" Height="12"
+                                           Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                           Opacity="0.14" />
+                                <Rectangle Canvas.Left="0" Canvas.Top="5" Width="148" Height="1.6"
+                                           Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                            </Canvas>
+                        </Canvas>
+                    </Border>
+                </Grid>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 11 · 骨架扫光 -->
+    <ControlTemplate x:Key="Progress.Template.Skeleton.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ShimmerShift"
+                                             Storyboard.TargetProperty="(TranslateTransform.X)"
+                                             From="-120" To="320"
+                                             Duration="{DynamicResource Progress.Duration.Base}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Border Width="320" Height="60" ClipToBounds="True">
+                    <Canvas Width="320" Height="60">
+                        <Rectangle Canvas.Left="0" Canvas.Top="0" Width="320" Height="12"
+                                   RadiusX="4" RadiusY="4"
+                                   Fill="{DynamicResource Progress.Brush.Track}" />
+                        <Rectangle Canvas.Left="0" Canvas.Top="22" Width="192" Height="12"
+                                   RadiusX="4" RadiusY="4"
+                                   Fill="{DynamicResource Progress.Brush.Track}" />
+                        <Rectangle Canvas.Left="0" Canvas.Top="44" Width="320" Height="12"
+                                   RadiusX="4" RadiusY="4"
+                                   Fill="{DynamicResource Progress.Brush.Track}" />
+                        <Rectangle Canvas.Left="0" Canvas.Top="0" Width="120" Height="60"
+                                   Fill="#FFFFFF" Opacity="0.3">
+                            <Rectangle.OpacityMask>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="Transparent" Offset="0" />
+                                    <GradientStop Color="Black" Offset="0.5" />
+                                    <GradientStop Color="Transparent" Offset="1" />
+                                </LinearGradientBrush>
+                            </Rectangle.OpacityMask>
+                            <Rectangle.RenderTransform>
+                                <TranslateTransform x:Name="ShimmerShift" />
+                            </Rectangle.RenderTransform>
+                        </Rectangle>
+                    </Canvas>
+                </Border>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 点组 ============ -->
+
+    <!-- 09 · 三点脉动 -->
+    <ControlTemplate x:Key="Progress.Template.BounceDots.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotA"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotA"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotB"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                                                           BeginTime="0:0:0.16"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotB"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.16"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotC"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                                                           BeginTime="0:0:0.32"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="DotC"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.32"
+                                                           Duration="{DynamicResource Progress.Duration.Fast}"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.4" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.1" Value="0.4" />
+                            </DoubleAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="24">
+                    <Ellipse Canvas.Left="38" Canvas.Top="7.5" Width="9" Height="9"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform x:Name="DotA" ScaleX="0.4" ScaleY="0.4" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="56" Canvas.Top="7.5" Width="9" Height="9"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform x:Name="DotB" ScaleX="0.4" ScaleY="0.4" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Ellipse Canvas.Left="74" Canvas.Top="7.5" Width="9" Height="9"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform x:Name="DotC" ScaleX="0.4" ScaleY="0.4" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 10 · 声纳波纹：单 Phase 自绘，替代 6 条 Scale/Opacity 动画 -->
+    <ControlTemplate x:Key="Progress.Template.Sonar.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SonarPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1"
+                                             Duration="{DynamicResource Progress.Duration.Slow}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 不用 Viewbox：Painter 按 ActualWidth/Height 自适应，省掉逐帧缩放重采样 -->
+            <p:ProgressPainter x:Name="SonarPainter" Grid.Column="0"
+                               Pattern="Sonar" Thickness="1.5"
+                               Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                               Dim="{DynamicResource Progress.Brush.Track}" />
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 14 · 打字省略号 -->
+    <ControlTemplate x:Key="Progress.Template.Typing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TypingA"
+                                                           Storyboard.TargetProperty="Opacity"
+                                                           Duration="{DynamicResource Progress.Duration.Base}"
+                                                           RepeatBehavior="Forever">
+                                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.17" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.64" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="0" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TypingB"
+                                                           Storyboard.TargetProperty="Opacity"
+                                                           BeginTime="0:0:0.2"
+                                                           Duration="{DynamicResource Progress.Duration.Base}"
+                                                           RepeatBehavior="Forever">
+                                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.17" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.64" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="0" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TypingC"
+                                                           Storyboard.TargetProperty="Opacity"
+                                                           BeginTime="0:0:0.4"
+                                                           Duration="{DynamicResource Progress.Duration.Base}"
+                                                           RepeatBehavior="Forever">
+                                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.17" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.48" Value="1" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:0.64" Value="0" />
+                                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="0" />
+                            </DoubleAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                <TextBlock FontSize="13"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource Progress.Brush.Ink}"
+                           Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+                <StackPanel Orientation="Horizontal" Margin="6,3,0,0" VerticalAlignment="Center">
+                    <Ellipse x:Name="TypingA" Width="5" Height="5" Margin="0,0,3,0" Opacity="0"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                    <Ellipse x:Name="TypingB" Width="5" Height="5" Margin="0,0,3,0" Opacity="0"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                    <Ellipse x:Name="TypingC" Width="5" Height="5" Opacity="0"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 18 · 雷达扫描臂 -->
+    <ControlTemplate x:Key="Progress.Template.Radar.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="RadarRotate"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360"
+                                             Duration="{DynamicResource Progress.Duration.Slow}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="2" Canvas.Top="2" Width="116" Height="116"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="1" />
+                    <Ellipse Canvas.Left="27" Canvas.Top="27" Width="66" Height="66"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="1"
+                             StrokeDashArray="2 3" />
+                    <Line X1="60" Y1="6" X2="60" Y2="114" Stroke="{DynamicResource Progress.Brush.Guide}" StrokeThickness="1" />
+                    <Line X1="6" Y1="60" X2="114" Y2="60" Stroke="{DynamicResource Progress.Brush.Guide}" StrokeThickness="1" />
+                    <Grid Width="120" Height="120" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <RotateTransform x:Name="RadarRotate" />
+                        </Grid.RenderTransform>
+                        <Path Data="M 60,60 L 60,2 A 58,58 0 0 1 98.8,16.9 Z"
+                              Fill="{DynamicResource Progress.Brush.AccentSoft}" />
+                        <Path Data="M 60,60 L 98.8,16.9"
+                              Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                              StrokeThickness="1.5" />
+                    </Grid>
+                    <Ellipse Canvas.Left="56" Canvas.Top="56" Width="8" Height="8"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 21 · 呼吸光球：单 Phase 自绘，渐变只冻结一次，不再逐帧缩放重光栅化 -->
+    <ControlTemplate x:Key="Progress.Template.Breathing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="BreathPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1"
+                                             Duration="{DynamicResource Progress.Duration.Breath}"
+                                             AutoReverse="True"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <p:ProgressPainter x:Name="BreathPainter" Grid.Column="0"
+                               Pattern="Breathing"
+                               Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                               Dim="{DynamicResource Progress.Brush.Track}" />
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 23 · 花瓣绽放 -->
+    <ControlTemplate x:Key="Progress.Template.Petal.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="PetalSpin"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360" Duration="0:0:4"
+                                             RepeatBehavior="Forever" />
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Petal0"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           Duration="0:0:1.8"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.42" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.8" Value="0.42" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Petal1"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.18"
+                                                           Duration="0:0:1.8"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.42" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.8" Value="0.42" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Petal2"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.36"
+                                                           Duration="0:0:1.8"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.42" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.8" Value="0.42" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Petal3"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.54"
+                                                           Duration="0:0:1.8"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.42" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.8" Value="0.42" />
+                            </DoubleAnimationUsingKeyFrames>
+                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="Petal4"
+                                                           Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                                           BeginTime="0:0:0.72"
+                                                           Duration="0:0:1.8"
+                                                           RepeatBehavior="Forever">
+                                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.42" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:0.9" Value="1" />
+                                <EasingDoubleKeyFrame KeyTime="0:0:1.8" Value="0.42" />
+                            </DoubleAnimationUsingKeyFrames>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Grid Width="120" Height="120" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <RotateTransform x:Name="PetalSpin" />
+                        </Grid.RenderTransform>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="0" />
+                            </Grid.RenderTransform>
+                            <Ellipse Width="13" Height="34" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                     Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                     RenderTransformOrigin="0.5,1">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="Petal0" ScaleY="0.42" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="72" />
+                            </Grid.RenderTransform>
+                            <Ellipse Width="13" Height="34" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                     Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                     RenderTransformOrigin="0.5,1">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="Petal1" ScaleY="0.42" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="144" />
+                            </Grid.RenderTransform>
+                            <Ellipse Width="13" Height="34" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                     Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                     RenderTransformOrigin="0.5,1">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="Petal2" ScaleY="0.42" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="216" />
+                            </Grid.RenderTransform>
+                            <Ellipse Width="13" Height="34" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                     Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                     RenderTransformOrigin="0.5,1">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="Petal3" ScaleY="0.42" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <Grid RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <RotateTransform Angle="288" />
+                            </Grid.RenderTransform>
+                            <Ellipse Width="13" Height="34" VerticalAlignment="Top" HorizontalAlignment="Center"
+                                     Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                     RenderTransformOrigin="0.5,1">
+                                <Ellipse.RenderTransform>
+                                    <ScaleTransform x:Name="Petal4" ScaleY="0.42" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                    </Grid>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 06 · 轨道点 -->
+    <ControlTemplate x:Key="Progress.Template.Orbit.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="OrbitA"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="0" To="360" Duration="0:0:1.9"
+                                             RepeatBehavior="Forever" />
+                            <DoubleAnimation Storyboard.TargetName="OrbitB"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="130" To="490" Duration="0:0:2.7"
+                                             RepeatBehavior="Forever" />
+                            <DoubleAnimation Storyboard.TargetName="OrbitC"
+                                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                                             From="250" To="610" Duration="0:0:3.5"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="27" Canvas.Top="27" Width="66" Height="66"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="1"
+                             StrokeDashArray="1 2" />
+                    <Canvas Width="120" Height="120" RenderTransformOrigin="0.5,0.5">
+                        <Canvas.RenderTransform>
+                            <RotateTransform x:Name="OrbitA" />
+                        </Canvas.RenderTransform>
+                        <Ellipse Canvas.Left="56.5" Canvas.Top="27" Width="7" Height="7"
+                                 Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                    </Canvas>
+                    <Canvas Width="120" Height="120" RenderTransformOrigin="0.5,0.5">
+                        <Canvas.RenderTransform>
+                            <RotateTransform x:Name="OrbitB" Angle="130" />
+                        </Canvas.RenderTransform>
+                        <Ellipse Canvas.Left="56.5" Canvas.Top="27" Width="7" Height="7" Opacity="0.8"
+                                 Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                    </Canvas>
+                    <Canvas Width="120" Height="120" RenderTransformOrigin="0.5,0.5">
+                        <Canvas.RenderTransform>
+                            <RotateTransform x:Name="OrbitC" Angle="250" />
+                        </Canvas.RenderTransform>
+                        <Ellipse Canvas.Left="57" Canvas.Top="27" Width="6" Height="6"
+                                 Fill="{DynamicResource Progress.Brush.Secondary}" />
+                    </Canvas>
+                    <Ellipse Canvas.Left="55.5" Canvas.Top="55.5" Width="9" Height="9"
+                             Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 参数化阵列组（ProgressPainter 自绘） ============ -->
+
+    <!-- 05 · 信号带 -->
+    <ControlTemplate x:Key="Progress.Template.Signal.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SignalPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1" Duration="0:0:1.05"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="60">
+                    <p:ProgressPainter x:Name="SignalPainter" Canvas.Left="0" Canvas.Top="0"
+                                       Width="120" Height="60"
+                                       Pattern="Signal" Count="28"
+                                       Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Dim="{DynamicResource Progress.Brush.Track}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 15 · 刻度游标环 -->
+    <ControlTemplate x:Key="Progress.Template.TickRing.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="TickPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1" Duration="0:0:1.6"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <p:ProgressPainter x:Name="TickPainter" Canvas.Left="0" Canvas.Top="0"
+                                       Width="120" Height="120"
+                                       Pattern="Ticks" Count="24"
+                                       Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Dim="{DynamicResource Progress.Brush.InkDim}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 16 · 行波线 -->
+    <ControlTemplate x:Key="Progress.Template.Wave.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="WavePainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1"
+                                             Duration="{DynamicResource Progress.Duration.Slow}"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="320" Height="60">
+                    <p:ProgressPainter x:Name="WavePainter" Canvas.Left="0" Canvas.Top="0"
+                                       Width="320" Height="60"
+                                       Pattern="Wave" Thickness="2.4"
+                                       Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Dim="{DynamicResource Progress.Brush.Track}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 17 · 点阵涟漪 -->
+    <ControlTemplate x:Key="Progress.Template.DotMatrix.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="MatrixPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1" Duration="0:0:1.8"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 去掉 Viewbox 的 200→实际尺寸缩放：Painter 直接按 ActualWidth/Height 铺满，逐帧不再重采样 -->
+            <p:ProgressPainter x:Name="MatrixPainter" Grid.Column="0"
+                               Pattern="Matrix" Rows="9"
+                               Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                               Dim="{DynamicResource Progress.Brush.Track}" />
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 20 · 流星尾迹 -->
+    <ControlTemplate x:Key="Progress.Template.Comet.Indeterminate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="ProgressStates">
+                    <VisualState x:Name="Idle" />
+                    <VisualState x:Name="Running">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="CometPainter"
+                                             Storyboard.TargetProperty="Phase"
+                                             From="0" To="1" Duration="0:0:1.6"
+                                             RepeatBehavior="Forever" />
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="RunningReduced" />
+                    <VisualState x:Name="Success" />
+                    <VisualState x:Name="Error" />
+                    <VisualState x:Name="Paused" />
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="14.4" Canvas.Top="14.4" Width="91.2" Height="91.2"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="1"
+                             StrokeDashArray="1 3" />
+                    <p:ProgressPainter x:Name="CometPainter" Canvas.Left="0" Canvas.Top="0"
+                                       Width="120" Height="120"
+                                       Pattern="Comet" Count="6"
+                                       Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Dim="{DynamicResource Progress.Brush.Track}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 确定态（收敛为 3 套，按 Kind 映射） ============ -->
+
+    <!-- 条形确定态：FlowBar / CounterFlow / Skeleton 共用 -->
+    <ControlTemplate x:Key="Progress.Template.FlowBar.Determinate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="320" Height="20">
+                    <Rectangle Canvas.Left="0" Canvas.Top="8" Width="320" Height="4"
+                               RadiusX="2" RadiusY="2"
+                               Fill="{DynamicResource Progress.Brush.Track}" />
+                    <Rectangle Canvas.Left="0" Canvas.Top="8" Width="320" Height="4"
+                               RadiusX="2" RadiusY="2"
+                               Fill="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                               RenderTransformOrigin="0,0">
+                        <Rectangle.RenderTransform>
+                            <ScaleTransform ScaleX="{Binding Percent, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Rectangle.RenderTransform>
+                    </Rectangle>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.ValueText}"
+                       Margin="12,0,0,0"
+                       FontSize="13"
+                       HorizontalAlignment="Right"
+                       Text="{Binding Percent, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Progress.PercentToText}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 环形确定态：Arc / DualRing / GlowRing 等共用 -->
+    <ControlTemplate x:Key="Progress.Template.Arc.Determinate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <Ellipse Canvas.Left="8" Canvas.Top="8" Width="104" Height="104"
+                             Stroke="{DynamicResource Progress.Brush.Guide}"
+                             StrokeThickness="4" />
+                    <Path Width="120" Height="120"
+                          Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                          StrokeThickness="4"
+                          StrokeStartLineCap="Round"
+                          StrokeEndLineCap="Round">
+                        <Path.Data>
+                            <MultiBinding Converter="{StaticResource Progress.PercentToArc}"
+                                          ConverterParameter="4">
+                                <Binding Path="Percent" RelativeSource="{RelativeSource TemplatedParent}" />
+                                <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}" />
+                                <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}" />
+                            </MultiBinding>
+                        </Path.Data>
+                    </Path>
+                    <TextBlock Style="{StaticResource Progress.ValueText}"
+                               Canvas.Left="0" Canvas.Top="50" Width="120"
+                               Text="{Binding Percent, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Progress.PercentToText}}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- 分段环形确定态：TickRing 专用 -->
+    <ControlTemplate x:Key="Progress.Template.TickRing.Determinate" TargetType="{x:Type p:ProgressIndicator}">
+        <Grid x:Name="PART_Root" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Column="0" Stretch="Uniform">
+                <Canvas Width="120" Height="120">
+                    <p:ProgressPainter Canvas.Left="0" Canvas.Top="0" Width="120" Height="120"
+                                       Pattern="TicksProgress" Count="24"
+                                       Phase="{Binding Percent, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Accent="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Dim="{DynamicResource Progress.Brush.Track}" />
+                    <TextBlock Style="{StaticResource Progress.ValueText}"
+                               Canvas.Left="0" Canvas.Top="50" Width="120" FontSize="15"
+                               Text="{Binding Percent, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource Progress.PercentToText}}" />
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Grid.Column="1"
+                       Style="{StaticResource Progress.StatusText}"
+                       Text="{Binding StatusText, RelativeSource={RelativeSource TemplatedParent}}" />
+        </Grid>
+    </ControlTemplate>
+
+    <!-- ============ 流程步骤条 ============ -->
+
+    <!--
+        步骤项（横向）。每个步骤占一个等宽单元格（UniformGrid），节点在单元格内居中，
+        连接线拆成「左半段 + 右半段」两条，在单元格边界处对接。
+        这样整条链路随控件宽度自适应——旧版给每步固定 72px + 48px 连线，5 步要 552px，
+        卡片只有 430px 时最后一步的标签会被裁掉。
+    -->
+    <DataTemplate x:Key="Progress.StepTracker.Item">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="28" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="28" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="ConnectorLeft" Grid.Column="0" Height="1.6" VerticalAlignment="Center"
+                        Background="{DynamicResource Progress.Brush.Track}" />
+
+                <Grid Grid.Column="1" Width="28" Height="28" HorizontalAlignment="Center">
+                    <Ellipse x:Name="Halo" Width="28" Height="28" Opacity="0"
+                             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}"
+                             StrokeThickness="1.6"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <ScaleTransform x:Name="HaloScale" ScaleX="1" ScaleY="1" />
+                        </Ellipse.RenderTransform>
+                    </Ellipse>
+                    <Border x:Name="Node" Width="26" Height="26" CornerRadius="13"
+                            BorderThickness="1.6" Background="Transparent"
+                            BorderBrush="{DynamicResource Progress.Brush.Guide}">
+                        <TextBlock x:Name="Glyph" Text="{Binding Ordinal}" FontSize="11"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Progress.Brush.InkDim}" />
+                    </Border>
+                </Grid>
+
+                <Border x:Name="ConnectorRight" Grid.Column="2" Height="1.6" VerticalAlignment="Center"
+                        Background="{DynamicResource Progress.Brush.Track}" />
+            </Grid>
+
+            <!-- 标签不再限制宽度：单元格多宽就用多宽，只居中换行，不截断 -->
+            <TextBlock x:Name="Caption" Grid.Row="1" Text="{Binding Label}" FontSize="11.5"
+                       Margin="2,7,2,0" TextAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Progress.Brush.InkDim}" />
+        </Grid>
+
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="Done">
+                <Setter TargetName="Node" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="Node" Property="BorderBrush" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="Glyph" Property="Text" Value="✓" />
+                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource Progress.Brush.OnAccent}" />
+                <Setter TargetName="Caption" Property="Foreground" Value="{DynamicResource Progress.Brush.Ink}" />
+                <Setter TargetName="ConnectorLeft" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="ConnectorRight" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Active">
+                <Setter TargetName="Node" Property="BorderBrush" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="Glyph" Property="Foreground" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="Caption" Property="Foreground" Value="{DynamicResource Progress.Brush.Ink}" />
+                <Setter TargetName="Caption" Property="FontWeight" Value="SemiBold" />
+                <!-- 已走过的半段连接线跟着主色走，视觉上"进度条"停在当前步 -->
+                <Setter TargetName="ConnectorLeft" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard x:Name="HaloPulse">
+                        <Storyboard RepeatBehavior="Forever">
+                            <DoubleAnimation Storyboard.TargetName="HaloScale" Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                                             From="1" To="1.7" Duration="0:0:1.4" />
+                            <DoubleAnimation Storyboard.TargetName="HaloScale" Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                             From="1" To="1.7" Duration="0:0:1.4" />
+                            <DoubleAnimation Storyboard.TargetName="Halo" Storyboard.TargetProperty="Opacity"
+                                             From="0.55" To="0" Duration="0:0:1.4" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="HaloPulse" />
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Error">
+                <Setter TargetName="Node" Property="Background" Value="{DynamicResource Progress.Brush.Error}" />
+                <Setter TargetName="Node" Property="BorderBrush" Value="{DynamicResource Progress.Brush.Error}" />
+                <Setter TargetName="Glyph" Property="Text" Value="✗" />
+                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource Progress.Brush.OnAccent}" />
+                <Setter TargetName="Caption" Property="Foreground" Value="{DynamicResource Progress.Brush.Error}" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Skipped">
+                <Setter TargetName="Node" Property="BorderBrush" Value="{DynamicResource Progress.Brush.InkDim}" />
+                <Setter TargetName="Glyph" Property="Text" Value="–" />
+                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource Progress.Brush.InkDim}" />
+                <Setter TargetName="Caption" Property="Foreground" Value="{DynamicResource Progress.Brush.InkDim}" />
+            </DataTrigger>
+
+            <!-- 首尾各隐藏外侧半段：整条链路只在相邻节点之间出现 -->
+            <DataTrigger Binding="{Binding IsFirst}" Value="True">
+                <Setter TargetName="ConnectorLeft" Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsLast}" Value="True">
+                <Setter TargetName="ConnectorRight" Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding ShowConnector, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" Value="False">
+                <Setter TargetName="ConnectorLeft" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="ConnectorRight" Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- 竖向排列用的步骤项：节点在上、标签在下，连接线画在节点上方（首步不画） -->
+    <DataTemplate x:Key="Progress.StepTracker.Item.Vertical">
+        <Grid Margin="0,0,0,6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="28" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border x:Name="ConnectorTop" Grid.Row="0" Width="1.6" Height="14" HorizontalAlignment="Center"
+                    Background="{DynamicResource Progress.Brush.Track}" />
+
+            <Grid Grid.Row="1" Width="28" Height="28" HorizontalAlignment="Center">
+                <Ellipse x:Name="HaloV" Width="28" Height="28" Opacity="0"
+                         Stroke="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}"
+                         StrokeThickness="1.6"
+                         RenderTransformOrigin="0.5,0.5">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="HaloScaleV" ScaleX="1" ScaleY="1" />
+                    </Ellipse.RenderTransform>
+                </Ellipse>
+                <Border x:Name="NodeV" Width="26" Height="26" CornerRadius="13"
+                        BorderThickness="1.6" Background="Transparent"
+                        BorderBrush="{DynamicResource Progress.Brush.Guide}">
+                    <TextBlock x:Name="GlyphV" Text="{Binding Ordinal}" FontSize="11"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="{DynamicResource Progress.Brush.InkDim}" />
+                </Border>
+            </Grid>
+
+            <TextBlock x:Name="CaptionV" Grid.Row="2" Text="{Binding Label}" FontSize="11.5"
+                       Margin="2,7,2,0" TextAlignment="Center" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Progress.Brush.InkDim}" />
+        </Grid>
+
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding State}" Value="Done">
+                <Setter TargetName="NodeV" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="NodeV" Property="BorderBrush" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="GlyphV" Property="Text" Value="✓" />
+                <Setter TargetName="GlyphV" Property="Foreground" Value="{DynamicResource Progress.Brush.OnAccent}" />
+                <Setter TargetName="CaptionV" Property="Foreground" Value="{DynamicResource Progress.Brush.Ink}" />
+                <Setter TargetName="ConnectorTop" Property="Background" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Active">
+                <Setter TargetName="NodeV" Property="BorderBrush" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="GlyphV" Property="Foreground" Value="{Binding AccentBrush, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" />
+                <Setter TargetName="CaptionV" Property="Foreground" Value="{DynamicResource Progress.Brush.Ink}" />
+                <Setter TargetName="CaptionV" Property="FontWeight" Value="SemiBold" />
+                <DataTrigger.EnterActions>
+                    <BeginStoryboard x:Name="HaloPulseV">
+                        <Storyboard RepeatBehavior="Forever">
+                            <DoubleAnimation Storyboard.TargetName="HaloScaleV" Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                                             From="1" To="1.7" Duration="0:0:1.4" />
+                            <DoubleAnimation Storyboard.TargetName="HaloScaleV" Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                                             From="1" To="1.7" Duration="0:0:1.4" />
+                            <DoubleAnimation Storyboard.TargetName="HaloV" Storyboard.TargetProperty="Opacity"
+                                             From="0.55" To="0" Duration="0:0:1.4" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </DataTrigger.EnterActions>
+                <DataTrigger.ExitActions>
+                    <StopStoryboard BeginStoryboardName="HaloPulseV" />
+                </DataTrigger.ExitActions>
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Error">
+                <Setter TargetName="NodeV" Property="Background" Value="{DynamicResource Progress.Brush.Error}" />
+                <Setter TargetName="NodeV" Property="BorderBrush" Value="{DynamicResource Progress.Brush.Error}" />
+                <Setter TargetName="GlyphV" Property="Text" Value="✗" />
+                <Setter TargetName="GlyphV" Property="Foreground" Value="{DynamicResource Progress.Brush.OnAccent}" />
+                <Setter TargetName="CaptionV" Property="Foreground" Value="{DynamicResource Progress.Brush.Error}" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding State}" Value="Skipped">
+                <Setter TargetName="NodeV" Property="BorderBrush" Value="{DynamicResource Progress.Brush.InkDim}" />
+                <Setter TargetName="GlyphV" Property="Text" Value="–" />
+                <Setter TargetName="GlyphV" Property="Foreground" Value="{DynamicResource Progress.Brush.InkDim}" />
+                <Setter TargetName="CaptionV" Property="Foreground" Value="{DynamicResource Progress.Brush.InkDim}" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding IsFirst}" Value="True">
+                <Setter TargetName="ConnectorTop" Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+
+            <DataTrigger Binding="{Binding ShowConnector, RelativeSource={RelativeSource AncestorType={x:Type p:StepTracker}}}" Value="False">
+                <Setter TargetName="ConnectorTop" Property="Visibility" Value="Hidden" />
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <ControlTemplate x:Key="Progress.Template.StepTracker" TargetType="{x:Type p:StepTracker}">
+        <ItemsControl x:Name="Host" ItemsSource="{TemplateBinding Steps}" Background="Transparent"
+                      ItemTemplate="{StaticResource Progress.StepTracker.Item}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <!-- 等分宽度：步数再多也不会撑破容器 -->
+                    <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+        <ControlTemplate.Triggers>
+            <Trigger Property="Orientation" Value="Vertical">
+                <Setter TargetName="Host" Property="ItemsPanel">
+                    <Setter.Value>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="1" />
+                        </ItemsPanelTemplate>
+                    </Setter.Value>
+                </Setter>
+                <Setter TargetName="Host" Property="ItemTemplate"
+                        Value="{StaticResource Progress.StepTracker.Item.Vertical}" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+</ResourceDictionary>

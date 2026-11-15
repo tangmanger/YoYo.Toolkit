@@ -1,0 +1,503 @@
+﻿<UserControl x:Class="YoYo.ToolkitSample.Views.ControlsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:txt="clr-namespace:YoYo.Toolkit.Controls.Text;assembly=YoYo.Toolkit"
+             xmlns:yy="clr-namespace:YoYo.Toolkit.Controls.ComboBox;assembly=YoYo.Toolkit"
+             xmlns:ibtn="clr-namespace:YoYo.Toolkit.Controls.Button;assembly=YoYo.Toolkit"
+             xmlns:bi="clr-namespace:YoYo.Toolkit.Controls.BusyIndicators;assembly=YoYo.Toolkit"
+             xmlns:input="clr-namespace:YoYo.Toolkit.Input;assembly=YoYo.Toolkit"
+             xmlns:tk="clr-namespace:YoYo.Toolkit.Converters;assembly=YoYo.Toolkit"
+             xmlns:conv="clr-namespace:YoYo.ToolkitSample.Converters"
+             FontFamily="{DynamicResource Sample.FontFamily}"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+        <tk:NullToVisibilityConverter x:Key="TkNullToVis" />
+        <tk:PercentToTextConverter x:Key="TkPercent" />
+        <tk:BoolToVisibilityConverter x:Key="TkBoolToVis" />
+    </UserControl.Resources>
+
+    <StackPanel>
+
+        <!-- ============ 提示 ============ -->
+        <Border Style="{StaticResource Sample.Note}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Path Grid.Column="0" Data="{StaticResource Icon.Bang}" Width="13" Height="13" Stretch="Uniform"
+                      Stroke="{DynamicResource Sample.Warn}" StrokeThickness="1.9" VerticalAlignment="Top"
+                      Margin="0,3,0,0" StrokeStartLineCap="Round" />
+                <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Sample.Muted}"
+                           Foreground="{DynamicResource Sample.Ink2}"
+                           Text="除 Controls.Progress 外，包内不提供其它控件的主题字典——TProgressRing、IconRadioButton、TreeComboBox、PlaceholderTextBox 都需要宿主提供 Style。本页样式即宿主示例，定义在 Themes/Controls.xaml。" />
+            </Grid>
+        </Border>
+
+        <WrapPanel Margin="0,13,0,0">
+
+            <!-- ============ PlaceholderTextBox ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="PlaceholderTextBox" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Controls.Text" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,11,14,0">
+                        <TextBlock Text="PlaceHolderText" Style="{StaticResource Sample.FieldLabel}" Margin="0,0,0,4" />
+                        <txt:PlaceholderTextBox Style="{StaticResource Sample.Placeholder}"
+                                                PlaceHolderText="请输入样本编号"
+                                                Text="{Binding PlaceholderText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Text="IsShowError = True" Style="{StaticResource Sample.FieldLabel}"
+                                   Margin="0,10,0,4" />
+                        <txt:PlaceholderTextBox Style="{StaticResource Sample.Placeholder}"
+                                                IsShowError="True"
+                                                Text="{Binding ErrorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Text="CornerRadius = 14（胶囊）" Style="{StaticResource Sample.FieldLabel}"
+                                   Margin="0,10,0,4" />
+                        <txt:PlaceholderTextBox Style="{StaticResource Sample.Placeholder}" CornerRadius="14"
+                                                PlaceHolderText="搜索…" />
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <Grid>
+                            <TextBlock Text="TransformX / TransformY" Style="{StaticResource Sample.Kicker}" />
+                            <TextBlock Text="水印位置可偏移" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ TreeComboBox ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="TreeComboBox" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Controls.ComboBox" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,10,14,0">
+                        <Border Background="{DynamicResource Sample.Surface2}"
+                                BorderBrush="{DynamicResource Sample.Line}" BorderThickness="1"
+                                CornerRadius="6" Padding="9,5" Margin="0,0,0,8">
+                            <Grid>
+                                <StackPanel>
+                                    <TextBlock Text="SelectCommand 回显" Style="{StaticResource Sample.Kicker}" />
+                                    <TextBlock x:Name="DeviceText" Text="{Binding SelectedDevice}" FontSize="13.5"
+                                               Foreground="{DynamicResource Sample.Ink}" Margin="0,2,0,0"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding DropStateText}" HorizontalAlignment="Right"
+                                           Style="{StaticResource Sample.Kicker}" VerticalAlignment="Center" />
+                            </Grid>
+                        </Border>
+
+                        <yy:TreeComboBox x:Name="DeviceTree"
+                                         Style="{StaticResource Sample.TreePanel}"
+                                         Text="请选择设备"
+                                         ItemsSource="{Binding DeviceRoots}"
+                                         SelectCommand="{Binding SelectDeviceCommand}"
+                                         IsDorpDown="{Binding IsDropDown, Mode=TwoWay}"
+                                         IsOnlyLastNode="{Binding IsOnlyLastNode, Mode=TwoWay}">
+                            <yy:TreeComboBox.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                    <TextBlock Text="{Binding DisplayName}" />
+                                </HierarchicalDataTemplate>
+                            </yy:TreeComboBox.ItemTemplate>
+                        </yy:TreeComboBox>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <CheckBox Style="{StaticResource Sample.Switch}" Content="IsDorpDown"
+                                      IsChecked="{Binding IsDropDown, Mode=TwoWay}" />
+                            <CheckBox Style="{StaticResource Sample.Switch}" Content="IsOnlyLastNode"
+                                      Margin="16,0,0,0"
+                                      IsChecked="{Binding IsOnlyLastNode, Mode=TwoWay}" />
+                        </StackPanel>
+
+                        <TextBlock Text="点击字段展开下拉；选中末级节点后 IsDorpDown 自动置 false 收起"
+                                   Style="{StaticResource Sample.Kicker}" Margin="0,8,0,2"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <Grid>
+                            <TextBlock Text="节点实现 ITreeModel" Style="{StaticResource Sample.Kicker}" />
+                            <TextBlock Text="{Binding LeafStateText}" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ IconRadioButton ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="IconRadioButton" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Controls.Button" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,12,14,0">
+                        <ItemsControl ItemsSource="{Binding Modes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ibtn:IconRadioButton Style="{StaticResource Sample.IconOption}"
+                                                          GroupName="SampleMode"
+                                                          Icon="{Binding IconData}"
+                                                          Content="{Binding Label}"
+                                                          Margin="0,0,9,0"
+                                                          IconForeground="{Binding DataContext.IconBrush,
+                                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0"
+                                Margin="0,12,0,10" />
+
+                        <Grid>
+                            <TextBlock Text="IconForeground" Style="{StaticResource Sample.FieldLabel}"
+                                       VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource Sample.Btn.Ghost.Swatch}"
+                                        Command="{Binding TintAccentCommand}" ToolTip="Accent">
+                                    <Ellipse Width="14" Height="14" Fill="{DynamicResource Sample.Accent}" />
+                                </Button>
+                                <Button Style="{StaticResource Sample.Btn.Ghost.Swatch}"
+                                        Command="{Binding TintWarnCommand}" ToolTip="Warning">
+                                    <Ellipse Width="14" Height="14" Fill="{DynamicResource Sample.Warn}" />
+                                </Button>
+                                <Button Style="{StaticResource Sample.Btn.Ghost.Swatch}"
+                                        Command="{Binding TintOkCommand}" ToolTip="Success">
+                                    <Ellipse Width="14" Height="14" Fill="{DynamicResource Sample.Ok}" />
+                                </Button>
+                                <Button Style="{StaticResource Sample.Btn.Ghost.Swatch}"
+                                        Command="{Binding TintErrCommand}" ToolTip="Error">
+                                    <Ellipse Width="14" Height="14" Fill="{DynamicResource Sample.Err}" />
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <Grid>
+                            <TextBlock Text="GroupName = &quot;SampleMode&quot;" Style="{StaticResource Sample.Kicker}" />
+                            <TextBlock HorizontalAlignment="Right" Style="{StaticResource Sample.Kicker}">
+                                <Run Text="选中 " />
+                                <Run Text="{Binding SelectedModeLabel, Mode=OneWay}"
+                                     Foreground="{DynamicResource Sample.Accent}" FontWeight="SemiBold" />
+                            </TextBlock>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ OutlineText ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="OutlineText" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Controls.Text" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,12,14,0">
+                        <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="7" Height="92">
+                            <Border.Resources>
+                                <Style x:Key="Sample.OutlineDemo" TargetType="txt:OutlineText">
+                                    <Setter Property="Text" Value="SYSTEM READY" />
+                                    <Setter Property="FontSize" Value="27" />
+                                    <Setter Property="FontWeight" Value="SemiBold" />
+                                    <Setter Property="FontFamily" Value="{DynamicResource Sample.FontFamily}" />
+                                </Style>
+                            </Border.Resources>
+                            <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <!-- 每档一整套样式（Fill / Stroke / 粗细 / StrokePosition），与设计稿的 class 切换一致。
+                                     StrokePosition 这个 DP 本身不触发重绘，所以三档用实例显隐切换，而不是运行时改它。 -->
+                                <txt:OutlineText Style="{StaticResource Sample.OutlineDemo}"
+                                                 Fill="{DynamicResource Sample.Surface2}"
+                                                 Stroke="{DynamicResource Sample.Accent}"
+                                                 StrokeThickness="1.1" StrokePosition="Outside"
+                                                 Visibility="{Binding IsStrokeOutside, Converter={StaticResource BoolToVis}}" />
+                                <txt:OutlineText Style="{StaticResource Sample.OutlineDemo}"
+                                                 Fill="Transparent"
+                                                 Stroke="{DynamicResource Sample.Accent}"
+                                                 StrokeThickness="0.8" StrokePosition="Center"
+                                                 Visibility="{Binding IsStrokeCenter, Converter={StaticResource BoolToVis}}" />
+                                <txt:OutlineText Style="{StaticResource Sample.OutlineDemo}"
+                                                 Fill="{DynamicResource Sample.Ink}"
+                                                 Stroke="{DynamicResource Sample.Accent}"
+                                                 StrokeThickness="1.1" StrokePosition="Inside"
+                                                 Visibility="{Binding IsStrokeInside, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+                        </Border>
+
+                        <Border Padding="2" Margin="0,11,0,0" HorizontalAlignment="Left"
+                                Background="{DynamicResource Sample.Surface2}"
+                                BorderBrush="{DynamicResource Sample.Line}" BorderThickness="1"
+                                CornerRadius="6">
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton Content="Outside" GroupName="StrokeSeg"
+                                             Style="{StaticResource Sample.Segment}"
+                                             IsChecked="{Binding IsStrokeOutside, Mode=OneWay}"
+                                             Command="{Binding StrokeOutsideCommand}" />
+                                <RadioButton Content="Center" GroupName="StrokeSeg"
+                                             Style="{StaticResource Sample.Segment}"
+                                             IsChecked="{Binding IsStrokeCenter, Mode=OneWay}"
+                                             Command="{Binding StrokeCenterCommand}" />
+                                <RadioButton Content="Inside" GroupName="StrokeSeg"
+                                             Style="{StaticResource Sample.Segment}"
+                                             IsChecked="{Binding IsStrokeInside, Mode=OneWay}"
+                                             Command="{Binding StrokeInsideCommand}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <Grid>
+                            <TextBlock Text="纯代码绘制，无模板依赖" Style="{StaticResource Sample.Kicker}" />
+                            <TextBlock Text="StrokePosition" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ TProgressRing ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="TProgressRing" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Controls.BusyIndicators" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,12,14,0">
+                        <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="7">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18">
+                                <StackPanel Margin="0,0,26,0">
+                                    <bi:TProgressRing Style="{StaticResource Sample.Ring}" Width="28" Height="28"
+                                                      IsActive="{Binding IsRingActive}" />
+                                    <TextBlock Text="28" Style="{StaticResource Sample.Kicker}"
+                                               HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,26,0">
+                                    <bi:TProgressRing Style="{StaticResource Sample.Ring}" Width="40" Height="40"
+                                                      IsActive="{Binding IsRingActive}" />
+                                    <TextBlock Text="40" Style="{StaticResource Sample.Kicker}"
+                                               HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <bi:TProgressRing Style="{StaticResource Sample.Ring}" Width="56" Height="56"
+                                                      IsActive="{Binding IsRingActive}"
+                                                      Foreground="{DynamicResource Sample.Warn}" />
+                                    <TextBlock Text="56" Style="{StaticResource Sample.Kicker}"
+                                               HorizontalAlignment="Center" Margin="0,5,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Grid Margin="0,10,0,0">
+                            <CheckBox Style="{StaticResource Sample.Switch}" Content="IsActive"
+                                      IsChecked="{Binding IsRingActive, Mode=TwoWay}" />
+                            <TextBlock Text="StrokeDashArray + RotateTransform" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" VerticalAlignment="Center" />
+                        </Grid>
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <TextBlock Style="{StaticResource Sample.Kicker}" TextWrapping="Wrap"
+                                   Text="控件只认 IsActive；环形本身由模板画——没有 Style 就什么都不显示" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ============ PasswordHelper · OSKHelper ============ -->
+            <Border Style="{StaticResource Sample.Card}" Width="356" Margin="0,0,13,13">
+                <StackPanel>
+                    <Grid Margin="14,11,14,0">
+                        <TextBlock Text="PasswordHelper · OSKHelper" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="Input" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                    <StackPanel Margin="14,12,14,0">
+                        <TextBlock Text="Password=&quot;{Binding Password, Mode=TwoWay}&quot;"
+                                   Style="{StaticResource Sample.FieldLabel}" Margin="0,0,0,4" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Grid.Column="0">
+                                <PasswordBox Style="{StaticResource Sample.Password}"
+                                             input:PasswordHelper.Attach="True"
+                                             input:PasswordHelper.Password="{Binding Password, Mode=TwoWay}"
+                                             Visibility="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolToVis}}" />
+                                <TextBox Style="{StaticResource Sample.Input}"
+                                         Text="{Binding Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         Visibility="{Binding IsPasswordVisible, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+
+                            <Button Grid.Column="1" Style="{StaticResource Sample.Btn.Small}" Margin="6,0,0,0"
+                                    Content="{Binding RevealLabel}" Height="32" Padding="9,0"
+                                    Command="{Binding TogglePasswordCommand}" />
+                            <Button Grid.Column="2" Style="{StaticResource Sample.Btn.Small}" Margin="6,0,0,0"
+                                    Content="软键盘" Height="32" Padding="9,0"
+                                    Command="{Binding OskCommand}" />
+                        </Grid>
+
+                        <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="6" Padding="10,8"
+                                Margin="0,11,0,0">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Sample.Kicker}"
+                                           Text="触摸屏场景：OSKHelper.Attach=&quot;True&quot; 在 GotFocus 时拉起系统键盘" />
+                                <TextBlock Style="{StaticResource Sample.Kicker}" Margin="0,2,0,0"
+                                           Text="注意：#if DEBUG 下 Attach 不挂事件，避免开发时反复弹键盘" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,12,0,0"
+                            Padding="14,8">
+                        <TextBlock Text="PasswordBox 不能直接绑定 Password，需要附加属性" Style="{StaticResource Sample.Kicker}" />
+                    </Border>
+                </StackPanel>
+            </Border>
+
+        </WrapPanel>
+
+        <!-- ============ 值转换器 ============ -->
+        <TextBlock Text="值转换器" Style="{StaticResource Sample.SecTitle}" Margin="0,8,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="Converters · 4 个开箱即用" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <Border Style="{StaticResource Sample.Card}" Padding="0">
+            <StackPanel>
+                <Border Style="{StaticResource Sample.TableHead}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="转换器" Style="{StaticResource Sample.Kicker}" />
+                        <TextBlock Grid.Column="1" Text="作用" Style="{StaticResource Sample.Kicker}" />
+                        <TextBlock Grid.Column="2" Text="实时验证" Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Sample.TableRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="BoolToVisibilityConverter"
+                                   Style="{StaticResource Sample.TableCell}"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Grid.Column="1" Text="true → Visible，false → Collapsed"
+                                   Style="{StaticResource Sample.TableCell}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <CheckBox Style="{StaticResource Sample.Switch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding ConverterFlag, Mode=TwoWay}" />
+                            <Border Style="{StaticResource Sample.Chip}" Margin="9,0,0,0"
+                                    Background="{DynamicResource Sample.OkSoft}"
+                                    Visibility="{Binding ConverterFlag, Converter={StaticResource TkBoolToVis}}">
+                                <TextBlock Text="可见" Style="{StaticResource Sample.ChipText}" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Sample.TableRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="BoolToReverseConverter"
+                                   Style="{StaticResource Sample.TableCell}"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Grid.Column="1" Text="取反，与上者串联合成「空态提示」"
+                                   Style="{StaticResource Sample.TableCell}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBlock Text="与上同源：" Style="{StaticResource Sample.Kicker}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ConverterFlag,
+                                         Converter={StaticResource TkBoolToVis},
+                                         ConverterParameter=Inverse}"
+                                       Style="{StaticResource Sample.TableCell}" />
+                            <TextBlock Text="（取反后当 Visible 用）" Style="{StaticResource Sample.Kicker}"
+                                       VerticalAlignment="Center" Margin="4,0,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Sample.TableRow}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="NullToVisibilityConverter"
+                                   Style="{StaticResource Sample.TableCell}"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Grid.Column="1" Text="值为 null → Collapsed" Style="{StaticResource Sample.TableCell}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <TextBox Style="{StaticResource Sample.Input}" Width="112" Height="26"
+                                     Text="{Binding NullDemo, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <Border Style="{StaticResource Sample.Chip}" Margin="9,0,0,0"
+                                    Background="{DynamicResource Sample.OkSoft}"
+                                    Visibility="{Binding NullDemo, Converter={StaticResource TkNullToVis}}">
+                                <TextBlock Text="非空" Style="{StaticResource Sample.ChipText}" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource Sample.TableRow}" BorderThickness="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.4*" />
+                            <ColumnDefinition Width="1.4*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="PercentToTextConverter"
+                                   Style="{StaticResource Sample.TableCell}"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Grid.Column="1" Text="0~1 → &quot;62.0%&quot;，与弧线共用同一输入"
+                                   Style="{StaticResource Sample.TableCell}" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <Slider Style="{StaticResource Sample.Slider}" Width="140"
+                                    Minimum="0" Maximum="1" Value="{Binding PercentDemo, Mode=TwoWay}"
+                                    VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding PercentDemo, Converter={StaticResource TkPercent}, ConverterParameter=1}"
+                                       FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="12"
+                                       Foreground="{DynamicResource Sample.Ink2}" Width="50"
+                                       TextAlignment="Right" VerticalAlignment="Center" Margin="9,0,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

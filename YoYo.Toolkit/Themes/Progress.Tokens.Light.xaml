@@ -1,0 +1,42 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!--
+        浅色令牌。只放值，不放模板。
+        宿主覆盖只需在自己的资源中定义同名键，或在 App.xaml 之后 merge 本文件的深色版本。
+    -->
+
+    <SolidColorBrush x:Key="Progress.Brush.Accent" Color="#0E7C7B" />
+    <SolidColorBrush x:Key="Progress.Brush.AccentSoft" Color="#1F0E7C7B" />
+    <SolidColorBrush x:Key="Progress.Brush.Secondary" Color="#B4700F" />
+    <SolidColorBrush x:Key="Progress.Brush.Track" Color="#120F1416" />
+    <SolidColorBrush x:Key="Progress.Brush.Guide" Color="#2B0F1416" />
+    <SolidColorBrush x:Key="Progress.Brush.Success" Color="#2E7D53" />
+    <SolidColorBrush x:Key="Progress.Brush.Error" Color="#A93A2C" />
+    <SolidColorBrush x:Key="Progress.Brush.OnAccent" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Progress.Brush.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Progress.Brush.Ink" Color="#0F1416" />
+    <SolidColorBrush x:Key="Progress.Brush.InkSecondary" Color="#565F63" />
+    <SolidColorBrush x:Key="Progress.Brush.InkDim" Color="#8C969B" />
+
+    <sys:Double x:Key="Progress.Thickness.Hairline">3</sys:Double>
+    <sys:Double x:Key="Progress.Thickness.Ring">4</sys:Double>
+    <sys:Double x:Key="Progress.Thickness.Track">4</sys:Double>
+
+    <Duration x:Key="Progress.Duration.Fast">0:0:1.1</Duration>
+    <Duration x:Key="Progress.Duration.Base">0:0:1.4</Duration>
+    <Duration x:Key="Progress.Duration.Medium">0:0:1.9</Duration>
+    <Duration x:Key="Progress.Duration.Slow">0:0:2.4</Duration>
+    <Duration x:Key="Progress.Duration.Breath">0:0:2.6</Duration>
+
+    <sys:Double x:Key="Progress.Opacity.Dim">0.25</sys:Double>
+    <sys:Double x:Key="Progress.Opacity.Half">0.5</sys:Double>
+
+    <sys:Double x:Key="Progress.Size.Ring.Sm">16</sys:Double>
+    <sys:Double x:Key="Progress.Size.Ring.Md">36</sys:Double>
+    <sys:Double x:Key="Progress.Size.Ring.Lg">120</sys:Double>
+
+    <FontFamily x:Key="Progress.Font.Caption">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+</ResourceDictionary>

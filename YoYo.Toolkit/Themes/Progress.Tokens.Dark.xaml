@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!--
+        深色令牌。与浅色版键名完全一致，切换主题时整包替换即可，模板无需改动。
+    -->
+
+    <SolidColorBrush x:Key="Progress.Brush.Accent" Color="#2BB3A8" />
+    <SolidColorBrush x:Key="Progress.Brush.AccentSoft" Color="#262BB3A8" />
+    <SolidColorBrush x:Key="Progress.Brush.Secondary" Color="#D99533" />
+    <SolidColorBrush x:Key="Progress.Brush.Track" Color="#17FFFFFF" />
+    <SolidColorBrush x:Key="Progress.Brush.Guide" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="Progress.Brush.Success" Color="#5BB583" />
+    <SolidColorBrush x:Key="Progress.Brush.Error" Color="#D96A5B" />
+    <SolidColorBrush x:Key="Progress.Brush.OnAccent" Color="#0D1011" />
+    <SolidColorBrush x:Key="Progress.Brush.Surface" Color="#161A1C" />
+    <SolidColorBrush x:Key="Progress.Brush.Ink" Color="#E8ECEC" />
+    <SolidColorBrush x:Key="Progress.Brush.InkSecondary" Color="#9AA3A7" />
+    <SolidColorBrush x:Key="Progress.Brush.InkDim" Color="#6C757A" />
+
+    <sys:Double x:Key="Progress.Thickness.Hairline">3</sys:Double>
+    <sys:Double x:Key="Progress.Thickness.Ring">4</sys:Double>
+    <sys:Double x:Key="Progress.Thickness.Track">4</sys:Double>
+
+    <Duration x:Key="Progress.Duration.Fast">0:0:1.1</Duration>
+    <Duration x:Key="Progress.Duration.Base">0:0:1.4</Duration>
+    <Duration x:Key="Progress.Duration.Medium">0:0:1.9</Duration>
+    <Duration x:Key="Progress.Duration.Slow">0:0:2.4</Duration>
+    <Duration x:Key="Progress.Duration.Breath">0:0:2.6</Duration>
+
+    <sys:Double x:Key="Progress.Opacity.Dim">0.25</sys:Double>
+    <sys:Double x:Key="Progress.Opacity.Half">0.5</sys:Double>
+
+    <sys:Double x:Key="Progress.Size.Ring.Sm">16</sys:Double>
+    <sys:Double x:Key="Progress.Size.Ring.Md">36</sys:Double>
+    <sys:Double x:Key="Progress.Size.Ring.Lg">120</sys:Double>
+
+    <FontFamily x:Key="Progress.Font.Caption">Cascadia Mono, Consolas, Courier New</FontFamily>
+
+</ResourceDictionary>

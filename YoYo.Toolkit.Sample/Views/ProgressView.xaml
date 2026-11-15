@@ -1,0 +1,341 @@
+﻿<UserControl x:Class="YoYo.ToolkitSample.Views.ProgressView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:pg="clr-namespace:YoYo.Toolkit.Controls.Progress;assembly=YoYo.Toolkit"
+             xmlns:conv="clr-namespace:YoYo.Toolkit.Converters;assembly=YoYo.Toolkit"
+             FontFamily="{DynamicResource Sample.FontFamily}"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+
+    <UserControl.Resources>
+        <conv:PercentToTextConverter x:Key="PercentText" />
+    </UserControl.Resources>
+
+    <StackPanel>
+
+        <!-- ============ 工具条 ============ -->
+        <Border Style="{StaticResource Sample.Card}" Padding="12,9">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Style="{StaticResource Sample.Btn}" Command="{Binding TogglePauseCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="{StaticResource Icon.Pause}" Width="10" Height="10" Stretch="Uniform"
+                              Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.8" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding PauseLabel}" Margin="7,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <Border Grid.Column="1" Width="1" Height="16" Background="{DynamicResource Sample.LineStrong}"
+                        Margin="11,0" />
+
+                <TextBlock Grid.Column="2" Text="Value" Style="{StaticResource Sample.FieldLabel}"
+                           VerticalAlignment="Center" Margin="0,0,8,0" />
+                <Slider Grid.Column="3" Style="{StaticResource Sample.Slider}" Width="186"
+                        Minimum="0" Maximum="100" Value="{Binding ProgressValue, Mode=TwoWay}"
+                        VerticalAlignment="Center" />
+                <TextBlock Grid.Column="4" Text="{Binding ProgressValue, StringFormat={}{0:F0}}"
+                           FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="12"
+                           Foreground="{DynamicResource Sample.Ink2}" Width="34"
+                           VerticalAlignment="Center" Margin="7,0,0,0" />
+
+                <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border x:Name="StateChip" Style="{StaticResource Sample.Chip}" Margin="0,0,8,0">
+                        <TextBlock Text="{Binding StatusText}" Style="{StaticResource Sample.ChipText}"
+                                   Foreground="{DynamicResource Sample.Accent}" />
+                    </Border>
+                    <TextBlock Text="Progress.Templates.xaml" Style="{StaticResource Sample.Kicker}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ============ 环形 ============ -->
+        <TextBlock Text="环形 · 12 种" Style="{StaticResource Sample.SecTitle}" Margin="0,20,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="纯声明式 Storyboard · IsActive=False 即停故事板" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <ItemsControl ItemsSource="{Binding RingKinds}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource Sample.Card}" Width="150" Margin="0,0,10,10">
+                        <StackPanel>
+                            <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="9,9,0,0"
+                                    Height="104">
+                                <pg:ProgressIndicator Kind="{Binding Kind}"
+                                                      Width="{Binding Width}" Height="{Binding Height}"
+                                                      IsActive="{Binding DataContext.IsRunning,
+                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      ShowStatusText="False"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0"
+                                    Padding="10,7">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Sample.Ink}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding Kind}" Style="{StaticResource Sample.Kicker}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ 条形与波形 ============ -->
+        <TextBlock Text="条形与波形" Style="{StaticResource Sample.SecTitle}" Margin="0,10,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="ProgressPainter 自绘阵列 · 6 种" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <ItemsControl ItemsSource="{Binding BarKinds}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Style="{StaticResource Sample.Card}" Width="228" Margin="0,0,10,10">
+                        <StackPanel>
+                            <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="9,9,0,0"
+                                    Height="96">
+                                <pg:ProgressIndicator Kind="{Binding Kind}"
+                                                      Width="{Binding Width}" Height="{Binding Height}"
+                                                      IsActive="{Binding DataContext.IsRunning,
+                                                          RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      ShowStatusText="False"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0"
+                                    Padding="10,7">
+                                <Grid>
+                                    <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource Sample.Ink}" />
+                                    <TextBlock Text="{Binding Kind}" HorizontalAlignment="Right"
+                                               Style="{StaticResource Sample.Kicker}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ 行内小型 ============ -->
+        <TextBlock Text="行内小型" Style="{StaticResource Sample.SecTitle}" Margin="0,10,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="配 StatusText 使用 · ShowStatusText=True" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Padding="14,11" Margin="0,0,10,0">
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <pg:ProgressIndicator Kind="BounceDots" Width="72" Height="24"
+                                              IsActive="{Binding IsRunning}" ShowStatusText="False"
+                                              VerticalAlignment="Center" />
+                        <TextBlock Text="正在采集" FontSize="13.5" Margin="6,0,0,0" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Sample.Ink2}" />
+                    </StackPanel>
+                    <TextBlock Text="BounceDots" HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Style="{StaticResource Sample.Kicker}" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,11">
+                <Grid>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="分析样本" FontSize="13.5" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Sample.Ink2}" />
+                        <pg:ProgressIndicator Kind="Typing" Width="52" Height="24" Margin="8,0,0,0"
+                                              IsActive="{Binding IsRunning}" ShowStatusText="False"
+                                              VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Text="Typing" HorizontalAlignment="Right" VerticalAlignment="Center"
+                               Style="{StaticResource Sample.Kicker}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ============ 确定态 ============ -->
+        <TextBlock Text="确定态" Style="{StaticResource Sample.SecTitle}" Margin="0,20,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="IsIndeterminate=&quot;False&quot; · 受上方 Value 控制" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Margin="0,0,10,0">
+                <StackPanel>
+                    <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="9,9,0,0" Height="96"
+                            Padding="20,0">
+                        <StackPanel VerticalAlignment="Center">
+                            <pg:ProgressIndicator x:Name="DetBar" Kind="FlowBar" Width="180" Height="40"
+                                                  IsIndeterminate="False"
+                                                  Value="{Binding ProgressValue}"
+                                                  IsActive="{Binding IsRunning}" ShowStatusText="False" />
+                            <TextBlock Text="{Binding Percent, ElementName=DetBar, Converter={StaticResource PercentText}, ConverterParameter=1}"
+                                       Margin="0,8,0,0" FontFamily="{DynamicResource Sample.MonoFontFamily}"
+                                       FontSize="12" Foreground="{DynamicResource Sample.Ink3}" />
+                        </StackPanel>
+                    </Border>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Padding="10,7">
+                        <Grid>
+                            <TextBlock Text="条形" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="FlowBar.Determinate" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Margin="0,0,10,0">
+                <StackPanel>
+                    <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="9,9,0,0" Height="96">
+                        <pg:ProgressIndicator x:Name="DetArc" Kind="Arc" Width="84" Height="84"
+                                              IsIndeterminate="False" Value="{Binding ProgressValue}"
+                                              IsActive="{Binding IsRunning}" ShowStatusText="False"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Padding="10,7">
+                        <Grid>
+                            <TextBlock Text="环形" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="Arc.Determinate" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" Style="{StaticResource Sample.Card}">
+                <StackPanel>
+                    <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="9,9,0,0" Height="96">
+                        <pg:ProgressIndicator Kind="TickRing" Width="84" Height="84"
+                                              IsIndeterminate="False" Value="{Binding ProgressValue}"
+                                              IsActive="{Binding IsRunning}" ShowStatusText="False"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Padding="10,7">
+                        <Grid>
+                            <TextBlock Text="分段" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="TickRing.Determinate" HorizontalAlignment="Right"
+                                       Style="{StaticResource Sample.Kicker}" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============ StepTracker ============ -->
+        <TextBlock Text="流程步骤 · StepTracker" Style="{StaticResource Sample.SecTitle}" Margin="0,20,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="由 CurrentIndex 推导 · 显式状态优先" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.5*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Padding="14,12" Margin="0,0,10,0">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <TextBlock Text="CurrentIndex 驱动" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="ProgressStep[]" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+
+                    <pg:StepTracker Steps="{Binding Steps}" CurrentIndex="{Binding CurrentStep}" MinHeight="54" />
+
+                    <Grid Margin="0,14,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource Sample.Btn.Small}" Content="上一步"
+                                    Command="{Binding PrevStepCommand}" />
+                            <Button Style="{StaticResource Sample.Btn.Small}" Content="下一步" Margin="7,0,0,0"
+                                    Command="{Binding NextStepCommand}" />
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Style="{StaticResource Sample.Kicker}">
+                            <Run Text="CurrentIndex =" />
+                            <Run Text="{Binding CurrentStep, Mode=OneWay}"
+                                 Foreground="{DynamicResource Sample.Accent}" FontWeight="SemiBold" />
+                        </TextBlock>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <TextBlock Text="显式状态覆盖" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="ProgressStepState" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+
+                    <pg:StepTracker Steps="{Binding StateSteps}" CurrentIndex="3" MinHeight="54" />
+
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,14,0,9" />
+
+                    <WrapPanel>
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,5,5">
+                            <TextBlock Text="Done" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,5,5">
+                            <TextBlock Text="Error" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,5,5">
+                            <TextBlock Text="Skipped" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,5,5">
+                            <TextBlock Text="Active" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,5,5">
+                            <TextBlock Text="Waiting" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                    </WrapPanel>
+
+                    <TextBlock Style="{StaticResource Sample.Muted}" Margin="0,4,0,0"
+                               Text="显式设了 State 的步骤不被 CurrentIndex 覆盖——否则「失败后重试」的流程无法如实呈现。" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </StackPanel>
+</UserControl>

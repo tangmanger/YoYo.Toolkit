@@ -1,0 +1,62 @@
+<notifies:BaseMessageDialog x:Class="YoYo.ToolkitSample.Views.MyMessageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:notifies="clr-namespace:YoYo.Toolkit.Notifies;assembly=YoYo.Toolkit"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="提示"
+        Width="404" SizeToContent="Height"
+        WindowStyle="None" ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource Sample.Page}"
+        FontFamily="{DynamicResource Sample.FontFamily}"
+        TextOptions.TextFormattingMode="Ideal"
+        UseLayoutRounding="True">
+
+    <!--
+        圆角与阴影都由 WindowChrome + DWM 负责（见 Services/WindowFrame.cs）。
+        旧版是 AllowsTransparency + Border 上挂 DropShadowEffect：
+        effect 会把整棵子树先渲染到中间位图，文字发虚，而且透明窗口拿不到硬件合成。
+    -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="0"
+                            GlassFrameThickness="0"
+                            CornerRadius="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Border Background="{DynamicResource Sample.Surface}"
+            BorderBrush="{DynamicResource Sample.LineStrong}" BorderThickness="1"
+            CornerRadius="10">
+        <StackPanel Margin="18,15,18,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border x:Name="IconBox" Grid.Column="0" Width="28" Height="28" CornerRadius="7"
+                        VerticalAlignment="Top">
+                    <Path x:Name="IconPath" Width="14" Height="14" Stretch="Uniform"
+                          StrokeThickness="1.9" StrokeLineJoin="Round"
+                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="11,0,0,0">
+                    <TextBlock x:Name="CaptionText" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Sample.Ink}"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="MessageText" Margin="0,6,0,0"
+                               FontSize="14" LineHeight="22"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource Sample.Ink2}" />
+                </StackPanel>
+            </Grid>
+
+            <StackPanel x:Name="ButtonBar" Orientation="Horizontal" HorizontalAlignment="Right"
+                        Margin="0,17,0,0" />
+        </StackPanel>
+    </Border>
+</notifies:BaseMessageDialog>

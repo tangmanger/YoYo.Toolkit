@@ -1,0 +1,3235 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YoYo.Toolkit · 示例程序 · 高保真原型</title>
+<style>
+  /* ============================================================
+     设计令牌 —— 与《进度动效设计稿》同一套色板
+     命名刻意对齐 Progress.Brush.* / Progress.Size.*，便于映射回 WPF
+     ============================================================ */
+  :root{
+    --bg:#E7EAEB;
+    --app:#F2F3F4;
+    --surface:#FFFFFF;
+    --surface-2:#FAFBFB;
+    --surface-3:#F4F6F6;
+    --line:rgba(15,20,22,.09);
+    --line-strong:rgba(15,20,22,.15);
+    --ink:#0F1416;
+    --ink-2:#565F63;
+    --ink-3:#8C969B;
+    --accent:#0E7C7B;
+    --accent-ink:#0A6362;
+    --accent-soft:rgba(14,124,123,.10);
+    --accent-soft-2:rgba(14,124,123,.16);
+    --warn:#A9690D;
+    --warn-soft:rgba(180,112,15,.12);
+    --ok:#2E7D53;
+    --ok-soft:rgba(46,125,83,.12);
+    --err:#B3372C;
+    --err-soft:rgba(179,55,44,.10);
+    --track:rgba(15,20,22,.07);
+    --dot:rgba(15,20,22,.055);
+    --shadow-win:0 18px 46px rgba(15,20,22,.13), 0 2px 6px rgba(15,20,22,.06);
+    --ease-out:cubic-bezier(.23,1,.32,1);
+    --ease-io:cubic-bezier(.77,0,.175,1);
+    --mono:"Cascadia Mono","SF Mono",Consolas,ui-monospace,"Liberation Mono",monospace;
+    --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+    --sb:238px;
+  }
+  [data-theme="dark"]{
+    --bg:#07090A;
+    --app:#0D1011;
+    --surface:#161A1C;
+    --surface-2:#1A1F21;
+    --surface-3:#131719;
+    --line:rgba(255,255,255,.11);
+    --line-strong:rgba(255,255,255,.19);
+    --ink:#E8ECEC;
+    --ink-2:#9AA3A7;
+    --ink-3:#7E888D;
+    --accent:#2BB3A8;
+    --accent-ink:#57CFC5;
+    --accent-soft:rgba(43,179,168,.14);
+    --accent-soft-2:rgba(43,179,168,.22);
+    --warn:#D99533;
+    --warn-soft:rgba(217,149,51,.15);
+    --ok:#5BB583;
+    --ok-soft:rgba(91,181,131,.15);
+    --err:#E0705F;
+    --err-soft:rgba(224,112,95,.14);
+    --track:rgba(255,255,255,.10);
+    --dot:rgba(255,255,255,.055);
+    --shadow-win:0 20px 50px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:13px;line-height:1.6;padding:10px;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    transition:background 200ms ease;
+  }
+  button{font:inherit;color:inherit}
+  ::selection{background:var(--accent-soft-2)}
+
+  /* 滚动条 —— 细、方，仪器软件感，不用圆头 */
+  .content::-webkit-scrollbar,.scroll::-webkit-scrollbar{width:9px;height:9px}
+  .content::-webkit-scrollbar-thumb,.scroll::-webkit-scrollbar-thumb{
+    background:var(--line-strong);border:3px solid transparent;background-clip:content-box
+  }
+  .content::-webkit-scrollbar-thumb:hover,.scroll::-webkit-scrollbar-thumb:hover{background:var(--ink-3);background-clip:content-box}
+
+  /* ================= 窗口 ================= */
+  .win{
+    height:100%;display:flex;flex-direction:column;position:relative;
+    background:var(--app);border:1px solid var(--line-strong);border-radius:9px;
+    box-shadow:var(--shadow-win);overflow:hidden;
+  }
+
+  /* ---- 标题栏 ---- */
+  .titlebar{
+    height:40px;flex:0 0 40px;display:flex;align-items:center;gap:0;
+    border-bottom:1px solid var(--line);background:var(--surface);
+    user-select:none;
+  }
+  .brand{display:flex;align-items:center;gap:9px;padding:0 12px 0 14px}
+  .brand-mark{
+    width:21px;height:21px;border-radius:5px;background:var(--accent);
+    display:grid;place-items:center;color:#fff;font:600 9.5px/1 var(--mono);
+    letter-spacing:.04em;flex:0 0 auto;
+  }
+  .brand-name{font-size:12.5px;font-weight:640;letter-spacing:.005em}
+  .brand-sep{width:1px;height:13px;background:var(--line-strong)}
+  .brand-sub{font-size:12px;color:var(--ink-2)}
+  .ver{
+    font:10px/1 var(--mono);color:var(--ink-3);border:1px solid var(--line);
+    border-radius:4px;padding:3px 5px;margin-left:2px;letter-spacing:.02em;
+  }
+  .titlebar-spacer{flex:1}
+  .findbox{
+    display:flex;align-items:center;gap:7px;height:26px;width:212px;
+    border:1px solid var(--line);border-radius:6px;background:var(--surface-2);
+    padding:0 8px;margin-right:12px;transition:border-color 140ms ease;
+  }
+  .findbox:focus-within{border-color:var(--accent)}
+  .findbox input{
+    border:0;background:transparent;outline:0;font:12px var(--sans);
+    color:var(--ink);width:100%;padding:0;
+  }
+  .findbox input::placeholder{color:var(--ink-3)}
+  .findbox .kbd{
+    font:9.5px/1 var(--mono);color:var(--ink-3);border:1px solid var(--line);
+    border-radius:4px;padding:2px 4px;background:var(--surface);white-space:nowrap;
+  }
+  .win-btns{display:flex;height:100%;align-self:stretch}
+  .win-btn{
+    width:44px;height:100%;border:0;background:transparent;display:grid;place-items:center;
+    color:var(--ink-2);cursor:default;transition:background 120ms ease,color 120ms ease;
+  }
+  .win-btn:hover{background:var(--surface-3);color:var(--ink)}
+  .win-btn.close:hover{background:#C42B1C;color:#fff}
+
+  /* ---- 主体 ---- */
+  .shell{flex:1;display:flex;min-height:0}
+
+  /* ---- 侧栏 ---- */
+  .side{
+    width:var(--sb);flex:0 0 auto;display:flex;flex-direction:column;min-height:0;
+    border-right:1px solid var(--line);background:var(--surface);
+    transition:width 180ms var(--ease-out);
+  }
+  body.rail{--sb:62px}
+  .side-top{padding:10px 10px 6px;display:flex;align-items:center;gap:6px}
+  .side-filter{
+    position:relative;flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+    height:27px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2);
+    padding:0 7px;
+  }
+  .side-filter:focus-within{border-color:var(--accent)}
+  .side-filter input{
+    flex:1;min-width:0;border:0;background:transparent;outline:0;
+    font:11.5px var(--sans);color:var(--ink);padding:0;
+  }
+  .side-filter input::placeholder{color:var(--ink-3)}
+  body.rail .side-filter{display:none}
+  .rail-btn{
+    width:27px;height:27px;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;
+    background:var(--surface-2);display:grid;place-items:center;color:var(--ink-2);cursor:pointer;
+    transition:color 130ms ease,border-color 130ms ease;
+  }
+  .rail-btn:hover{color:var(--accent);border-color:var(--accent)}
+
+  .nav{flex:1;min-height:0;overflow-y:auto;padding:2px 8px 10px}
+  .nav::-webkit-scrollbar{width:0}
+  .nav-group{margin-top:9px}
+  .nav-label{
+    font:10px/1 var(--mono);letter-spacing:.09em;color:var(--ink-3);
+    padding:8px 8px 6px;text-transform:uppercase;
+  }
+  body.rail .nav-label{height:1px;padding:0;margin:9px 6px;background:var(--line);overflow:hidden;text-indent:-999px}
+
+  .nav-item{
+    display:flex;align-items:center;gap:9px;width:100%;height:31px;padding:0 8px;
+    border:0;border-radius:6px;background:transparent;cursor:pointer;text-align:left;
+    color:var(--ink-2);position:relative;transition:background 130ms ease,color 130ms ease;
+  }
+  .nav-item .ic{flex:0 0 16px;color:currentColor;opacity:.85}
+  .nav-item .nm{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nav-item .vt{
+    margin-left:auto;font:9.5px/1 var(--mono);color:var(--ink-3);
+    opacity:0;transition:opacity 130ms ease;white-space:nowrap;
+  }
+  body.rail .nav-item{justify-content:center;padding:0}
+  body.rail .nav-item .nm,body.rail .nav-item .vt{display:none}
+  body.rail .nav-item{height:34px}
+  .nav-item:hover{background:var(--surface-3);color:var(--ink)}
+  .nav-item:hover .vt{opacity:1}
+  .nav-item[aria-current="page"]{
+    background:var(--accent-soft);color:var(--accent);font-weight:600;
+  }
+  .nav-item[aria-current="page"] .ic{opacity:1}
+  .nav-item[aria-current="page"] .vt{opacity:1;color:var(--accent)}
+  .nav-item[aria-current="page"]::before{
+    content:"";position:absolute;left:-2px;top:11px;bottom:11px;width:3px;
+    border-radius:1px;background:var(--accent);
+  }
+  body.rail .nav-item[aria-current="page"]::before{left:0;top:9px;bottom:9px;width:2px}
+
+  .side-foot{border-top:1px solid var(--line);padding:9px 10px;display:flex;flex-direction:column;gap:7px}
+  .side-stat{
+    display:flex;align-items:center;gap:6px;font:10px/1.4 var(--mono);color:var(--ink-3);
+    white-space:nowrap;overflow:hidden;
+  }
+  .side-stat b{color:var(--ink-2);font-weight:600}
+  body.rail .side-foot{display:none}
+
+  /* ---- 主区 ---- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .pagehead{
+    flex:0 0 auto;display:flex;align-items:flex-end;gap:20px;
+    padding:13px 24px 13px;border-bottom:1px solid var(--line);background:var(--app);
+  }
+  .ph-left{min-width:0}
+  .crumb{font:10px/1.4 var(--mono);color:var(--ink-3);letter-spacing:.02em;display:flex;gap:6px;align-items:center}
+  .crumb b{color:var(--ink-2);font-weight:400}
+  .ph-title{display:flex;align-items:baseline;gap:10px;margin-top:4px}
+  .ph-title h1{margin:0;font-size:19px;font-weight:660;letter-spacing:-.008em;line-height:1.2}
+  .ph-lede{margin:3px 0 0;font-size:11.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ph-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:0 0 auto}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:2px;gap:2px}
+  .seg button{
+    border:0;background:transparent;color:var(--ink-2);font-size:11.5px;padding:3px 9px;
+    border-radius:5px;cursor:pointer;transition:color 130ms ease,background 130ms ease;
+  }
+  .seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+
+  .content{flex:1;min-height:0;overflow-y:auto;padding:18px 24px 30px;position:relative}
+  .page{display:none}
+  .page.on{display:block;animation:pageIn 190ms var(--ease-out)}
+  @keyframes pageIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+  .statusbar{
+    height:28px;flex:0 0 28px;display:flex;align-items:center;gap:12px;
+    padding:0 12px;border-top:1px solid var(--line);background:var(--surface);
+    font:10px/1 var(--mono);color:var(--ink-3);overflow:hidden;white-space:nowrap;
+  }
+  .statusbar .sb-item{display:flex;align-items:center;gap:5px}
+  .statusbar .sb-log{
+    flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    display:flex;align-items:center;gap:6px;
+  }
+  .statusbar .sb-log .lv{color:var(--accent)}
+  .statusbar .dot-live{width:5px;height:5px;border-radius:50%;background:var(--ok);flex:0 0 auto}
+
+  /* ================= 通用构件 ================= */
+  .grid{display:grid;gap:13px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media (max-width:1240px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;
+    display:flex;flex-direction:column;min-width:0;position:relative;
+  }
+  .card.hov{transition:border-color 150ms ease,transform 150ms ease,box-shadow 150ms ease}
+  @media (hover:hover) and (pointer:fine){
+    .card.hov:hover{border-color:var(--line-strong);box-shadow:0 6px 18px rgba(15,20,22,.055);transform:translateY(-1px)}
+    [data-theme="dark"] .card.hov:hover{box-shadow:0 8px 22px rgba(0,0,0,.4)}
+  }
+  .card-h{display:flex;align-items:center;gap:8px;padding:11px 13px 0;min-height:0}
+  .card-t{font-size:12.5px;font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-t .num{font:10px/1 var(--mono);color:var(--ink-3);margin-right:6px;font-weight:400}
+  .card-b{padding:12px 13px}
+  .card-d{font-size:11px;color:var(--ink-3);line-height:1.55}
+  .card-f{
+    margin-top:auto;padding:9px 13px;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:8px;font-size:10.5px;color:var(--ink-3);
+  }
+
+  .sec{display:flex;align-items:center;gap:10px;margin:20px 0 11px}
+  .sec:first-child{margin-top:0}
+  .sec h2{margin:0;font:11px/1 var(--mono);letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
+  .sec .rule{flex:1;height:1px;background:var(--line)}
+  .sec .cnt{font:10px/1 var(--mono);color:var(--ink-3)}
+
+  /* 令牌 / 键名小片 */
+  .k{
+    display:inline-flex;align-items:center;gap:4px;font:10px/1 var(--mono);
+    padding:3px 5px;border:1px solid var(--line);border-radius:4px;
+    color:var(--ink-2);background:var(--surface-2);white-space:nowrap;letter-spacing:.01em;
+  }
+  .k.accent{color:var(--accent);border-color:var(--accent-soft-2);background:var(--accent-soft)}
+  .k.get{color:var(--ok);border-color:var(--ok-soft);background:var(--ok-soft)}
+  .k.post{color:var(--accent);border-color:var(--accent-soft-2);background:var(--accent-soft)}
+  .k.put{color:var(--warn);border-color:var(--warn-soft);background:var(--warn-soft)}
+  .k.del{color:var(--err);border-color:var(--err-soft);background:var(--err-soft)}
+  .k.plain{background:transparent}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    height:27px;padding:0 11px;border:1px solid var(--line-strong);border-radius:6px;
+    background:var(--surface);color:var(--ink-2);font-size:11.5px;cursor:pointer;
+    transition:color 130ms ease,border-color 130ms ease,background 130ms ease;
+    white-space:nowrap;
+  }
+  .btn:hover{color:var(--accent);border-color:var(--accent)}
+  .btn:active{transform:translateY(.5px)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink);color:#fff}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--ink-3);padding:0 7px}
+  .btn.ghost:hover{background:var(--surface-3);color:var(--ink)}
+  .btn.sm{height:23px;font-size:11px;padding:0 8px;border-radius:5px}
+  .btn:disabled{opacity:.45;cursor:default;color:var(--ink-3);border-color:var(--line)}
+
+  .in{
+    height:28px;width:100%;border:1px solid var(--line-strong);border-radius:6px;
+    background:var(--surface);color:var(--ink);font:12px var(--sans);padding:0 9px;outline:0;
+    transition:border-color 130ms ease,box-shadow 130ms ease;
+  }
+  .in::placeholder{color:var(--ink-3)}
+  .in:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .in.err{border-color:var(--err);box-shadow:0 0 0 3px var(--err-soft)}
+  .in.sm{height:25px;font-size:11.5px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field-l{font:10px/1 var(--mono);color:var(--ink-3);letter-spacing:.04em}
+
+  .sw{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-2);cursor:pointer;user-select:none}
+  .sw-track{
+    width:28px;height:16px;border-radius:9px;background:var(--track);position:relative;
+    flex:0 0 auto;transition:background 150ms ease;
+  }
+  .sw-track::after{
+    content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;
+    background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.2);
+    transition:transform 170ms var(--ease-out);
+  }
+  .sw input{display:none}
+  .sw input:checked + .sw-track{background:var(--accent)}
+  .sw input:checked + .sw-track::after{transform:translateX(12px)}
+
+  table.tb{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.tb th{
+    text-align:left;font:10px/1 var(--mono);letter-spacing:.06em;color:var(--ink-3);
+    font-weight:400;padding:0 8px 7px;border-bottom:1px solid var(--line);
+    text-transform:uppercase;white-space:nowrap;
+  }
+  table.tb td{padding:7px 8px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:middle}
+  table.tb tr:last-child td{border-bottom:0}
+  table.tb tbody tr{transition:background 110ms ease}
+  table.tb tbody tr:hover{background:var(--surface-2)}
+  table.tb td.nm{color:var(--ink);font-weight:600;font-size:11.5px}
+
+  /* 点阵舞台 —— 预览区专用底 */
+  .stage{
+    background:var(--surface-2);
+    background-image:radial-gradient(var(--dot) .7px,transparent .7px);
+    background-size:12px 12px;border-radius:7px;
+  }
+
+  pre.code{
+    margin:0;background:var(--surface-3);border:1px solid var(--line);border-radius:7px;
+    padding:11px 12px;font:10.5px/1.72 var(--mono);color:var(--ink-2);
+    max-height:340px;overflow:auto;
+    white-space:pre;overflow-x:auto;
+  }
+  pre.code .c{color:var(--ink-3)}
+  pre.code .kw{color:var(--accent);font-weight:600}
+  pre.code .ty{color:var(--warn)}
+  pre.code .st{color:var(--ok)}
+  pre.code::-webkit-scrollbar{height:8px;width:8px}
+  pre.code::-webkit-scrollbar-thumb{background:var(--line-strong);border:2px solid transparent;background-clip:content-box}
+
+  /* 日志 */
+  .log{
+    font:10.5px/1.7 var(--mono);padding:9px 11px;overflow-y:auto;
+    background:var(--surface-2);border-radius:7px;border:1px solid var(--line);
+  }
+  .log .ln{display:flex;gap:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .log .t{color:var(--ink-3);flex:0 0 auto}
+  .log .m{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis}
+  .log .m.ok{color:var(--ok)}
+  .log .m.warn{color:var(--warn)}
+  .log .m.err{color:var(--err)}
+  .log .m.ac{color:var(--accent)}
+
+  .hr{height:1px;background:var(--line);margin:11px 0}
+  .row{display:flex;align-items:center;gap:8px}
+  .wrap{flex-wrap:wrap}
+  .spacer{flex:1}
+  .muted{color:var(--ink-3)}
+  .tiny{font-size:10.5px}
+  .icon{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .icon.lg{width:19px;height:19px}
+  .icon.sm{width:13px;height:13px}
+
+  /* ============================================================
+     页面级构件
+     ============================================================ */
+  .page code{
+    font:10.5px var(--mono);background:var(--surface-3);border:1px solid var(--line);
+    border-radius:4px;padding:1px 4px;color:var(--ink-2);white-space:nowrap;
+  }
+
+  /* ---- 概览 ---- */
+  .hero{flex-direction:row;align-items:stretch;background:var(--surface);overflow:hidden}
+  .hero-l{flex:1;min-width:0;padding:22px 24px}
+  .eyebrow{
+    font:10px/1.4 var(--mono);letter-spacing:.11em;color:var(--ink-3);
+    text-transform:uppercase;
+  }
+  .hero h2{margin:9px 0 0;font-size:23px;font-weight:660;letter-spacing:-.014em;line-height:1.3}
+  .hero p{margin:9px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.75;max-width:62ch}
+  .hero-r{
+    flex:0 0 268px;display:grid;grid-template-columns:1fr 1fr;border-left:1px solid var(--line);
+    background:var(--surface-2);
+  }
+  .stat{
+    padding:14px 16px;display:flex;flex-direction:column;gap:2px;justify-content:center;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  }
+  .stat:nth-child(2n){border-right:0}
+  .stat:nth-child(n+3){border-bottom:0}
+  .stat b{font:600 21px/1.1 var(--mono);letter-spacing:-.02em;color:var(--ink)}
+  .stat span{font-size:10.5px;color:var(--ink-3)}
+
+  .modcard{
+    text-align:left;padding:0;font:inherit;color:inherit;cursor:pointer;overflow:hidden;
+    min-height:98px;
+  }
+  .modcard-top{display:flex;align-items:center;gap:8px;padding:11px 12px 0}
+  .modcard-top .idx{font:10px/1 var(--mono);color:var(--ink-3)}
+  .modcard-top .k{margin-left:auto;font-size:9.5px}
+  .modcard-b{padding:7px 12px 11px}
+  .modcard-b h3{margin:0;font-size:13px;font-weight:640;letter-spacing:.005em}
+  .modcard-b p{margin:3px 0 0;font-size:11px;color:var(--ink-3);line-height:1.55}
+  .modcard-arrow{
+    position:absolute;right:10px;bottom:9px;color:var(--ink-3);opacity:0;transform:translateX(-3px);
+    transition:opacity 150ms ease,transform 150ms ease,color 150ms ease;
+  }
+  .modcard:hover .modcard-arrow{opacity:1;transform:none;color:var(--accent)}
+
+  .rule-item{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .rule-item:first-child{padding-top:0}
+  .rule-item:last-child{border-bottom:0;padding-bottom:0}
+  .rule-n{font:10px/1.6 var(--mono);color:var(--accent);flex:0 0 18px;padding-top:1px}
+  .rule-item b{font-size:12px;font-weight:640;display:block}
+  .rule-item p{margin:3px 0 0;font-size:11px;color:var(--ink-3);line-height:1.6}
+
+  .swatches{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:8px}
+  .swatch{display:flex;flex-direction:column;gap:4px}
+  .swatch i{
+    display:block;height:30px;border-radius:5px;border:1px solid var(--line-strong);
+  }
+  .swatch b{font-size:10px;font-weight:600;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .swatch span{font-size:9.5px;color:var(--ink-3)}
+
+  /* ---- 提示条 ---- */
+  .note{
+    display:flex;align-items:flex-start;gap:8px;padding:9px 11px;
+    background:var(--warn-soft);border:1px solid var(--warn);border-radius:7px;
+    font-size:11px;color:var(--ink-2);line-height:1.6;
+  }
+  .note code{background:transparent;border-color:var(--warn)}
+
+  /* ---- 导航时序 ---- */
+  .tl{display:flex;align-items:flex-start;width:100%;padding:6px 0 2px}
+  .tl-node{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;width:88px;text-align:center}
+  .tl-dot{
+    width:26px;height:26px;border-radius:50%;border:1.6px solid var(--line-strong);
+    background:var(--surface);display:grid;place-items:center;font:10px/1 var(--mono);
+    color:var(--ink-3);transition:all 220ms var(--ease-out);position:relative;
+  }
+  .tl-t{font:10.5px/1.3 var(--mono);color:var(--ink-3);transition:color 200ms ease}
+  .tl-d{font-size:10px;color:var(--ink-3);opacity:.8}
+  .tl-node.on .tl-dot{border-color:var(--accent);background:var(--accent);color:#fff;transform:scale(1.08)}
+  .tl-node.on .tl-dot::after{
+    content:"";position:absolute;inset:-5px;border-radius:50%;border:1px solid var(--accent);
+    opacity:.5;animation:tlpulse 900ms var(--ease-out) forwards;
+  }
+  .tl-node.on .tl-t{color:var(--ink);font-weight:600}
+  @keyframes tlpulse{from{transform:scale(1);opacity:.6}to{transform:scale(1.35);opacity:0}}
+  .tl-link{flex:1 1 auto;height:1.6px;background:var(--track);margin-top:13px;min-width:14px;position:relative}
+  .tl-link i{
+    position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left center;
+    transition:transform 260ms linear;
+  }
+  .tl-link.on i{transform:scaleX(1)}
+
+  .mount{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:7px;padding:10px 12px;
+  }
+  .mount-l{min-width:0}
+  .mount-v{font:11.5px/1.5 var(--mono);color:var(--ink);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .winrow{
+    display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--line);
+    border-radius:6px;background:var(--surface-2);
+  }
+  .winrow-t{font-size:11.5px;font-weight:600}
+  .winrow-s{
+    margin-left:auto;font:9.5px/1 var(--mono);padding:3px 5px;border-radius:4px;
+    color:var(--ok);background:var(--ok-soft);border:1px solid transparent;
+  }
+  .winrow-s.off{color:var(--ink-3);background:var(--surface-3);border-color:var(--line)}
+  .winrow.closed{opacity:.55}
+  .winrow .btn{flex:0 0 auto}
+
+  /* ---- 树形下拉 ---- */
+  .treecombo{position:relative}
+  .tc-field{
+    width:100%;height:29px;display:flex;align-items:center;gap:8px;padding:0 9px;
+    border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);
+    font-size:12px;color:var(--ink);cursor:pointer;text-align:left;
+  }
+  .tc-field:hover{border-color:var(--accent)}
+  .tc-field .muted{color:var(--ink-3)}
+  .tc-caret{margin-left:auto;color:var(--ink-3);transform:rotate(90deg);transition:transform 160ms ease}
+  .treecombo.open .tc-caret{transform:rotate(-90deg)}
+  .tc-pop{
+    display:none;position:static;margin-top:6px;z-index:20;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:6px;
+    padding:4px;
+  }
+  .treecombo.open .tc-pop{display:block;animation:popIn 130ms var(--ease-out)}
+  @keyframes popIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+  .tc-group{display:flex;flex-direction:column}
+  .tc-row{
+    display:flex;align-items:center;gap:6px;height:26px;padding:0 7px;border:0;border-radius:5px;
+    background:transparent;font-size:11.5px;color:var(--ink-2);cursor:pointer;text-align:left;
+  }
+  .tc-row:hover{background:var(--surface-3);color:var(--ink)}
+  .tc-row.lv2{padding-left:26px}
+  .tc-tw{color:var(--ink-3);transform:none;transition:transform 150ms ease}
+  .tc-group[data-open="true"] .tc-tw{transform:rotate(90deg)}
+  .tc-group[data-open="false"] .leaf{display:none}
+  .tc-row.sel{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .tc-row.dim{opacity:.35;pointer-events:none}
+
+  /* ---- 图标选项 ---- */
+  .irgroup{display:flex;gap:6px}
+  .irbtn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    height:60px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);
+    color:var(--ink-3);cursor:pointer;font-size:11px;
+    transition:border-color 140ms ease,color 140ms ease,background 140ms ease;
+  }
+  .irbtn:hover{border-color:var(--line-strong);color:var(--ink-2)}
+  .irgroup[data-value] .irbtn[aria-pressed="true"]{
+    border-color:var(--accent);color:var(--ir-color,var(--accent));
+    background:var(--accent-soft);
+  }
+  .irgroup[data-value] .irbtn[aria-pressed="true"] .icon{stroke-width:2}
+  .swatchdot{
+    width:17px;height:17px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;
+    box-shadow:0 0 0 1px var(--line) ;
+  }
+  .swatchdot[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink-3)}
+
+  /* ---- 描边文字 ---- */
+  .outline-txt{
+    font:700 30px/1 var(--sans);letter-spacing:.04em;color:var(--surface);
+    -webkit-text-stroke:1.4px var(--ink);text-stroke:1.4px var(--ink);white-space:nowrap;
+  }
+  .outline-txt.centerstroke{-webkit-text-stroke:0.7px var(--accent);color:transparent}
+  .outline-txt.insidestroke{color:var(--ink);-webkit-text-stroke:0}
+
+  /* ---- 圆环 ---- */
+  .ringwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .ring circle{
+    fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;
+    stroke-dasharray:16 24;transform-origin:center;animation:spin 1.2s linear infinite;
+  }
+  .ring.lg circle{animation-duration:1.6s}
+  .paused .ring circle,.paused .ringwrap *{animation-play-state:paused}
+
+  /* ---- 软键盘 ---- */
+  .osk{display:none;margin-top:10px;padding:9px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2)}
+  .osk.on{display:block;animation:popIn 150ms var(--ease-out)}
+  .osk-keys{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .osk-keys button{
+    height:26px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);
+    font:11px var(--mono);color:var(--ink-2);cursor:pointer;
+  }
+  .osk-keys button:hover{border-color:var(--accent);color:var(--accent)}
+  .osk-keys button:active{background:var(--accent-soft)}
+  .osk-keys button.wide{grid-column:span 1}
+
+  /* ---- 转换器 ---- */
+  .cv-box{
+    font:10px/1 var(--mono);padding:4px 6px;border-radius:4px;border:1px dashed var(--line-strong);
+    color:var(--ink-3);transition:all 160ms ease;
+  }
+  .cv-box.off{opacity:0}
+
+  /* ---- 进度页 ---- */
+  .toolbar{padding:0}
+  .toolbar .row{padding:9px 13px}
+  .tb-sep{width:1px;height:16px;background:var(--line);flex:0 0 auto}
+  .kindcard{
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;overflow:hidden;
+    display:flex;flex-direction:column;min-width:0;
+  }
+  .kstage{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-height:108px;padding:14px;border-radius:0;border-bottom:1px solid var(--line);
+    background:var(--surface-2);
+    background-image:radial-gradient(var(--dot) .7px,transparent .7px);background-size:12px 12px;
+  }
+  .kfoot{display:flex;align-items:center;gap:8px;padding:7px 10px;font-size:11px}
+  .kfoot b{font-weight:600}
+  .kfoot .k{margin-left:auto;font-size:9.5px}
+
+  .trk{fill:none;stroke:var(--track);stroke-width:3}
+  .arc-spin{
+    fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;
+    stroke-dasharray:44 126;transform-origin:34px 34px;animation:spin 1.05s linear infinite;
+  }
+  .march{
+    fill:none;stroke:var(--accent);stroke-width:2.2;stroke-dasharray:3.5 6;
+    transform-origin:34px 34px;animation:spin 4.5s linear infinite;opacity:.85;
+  }
+  .dual-a{
+    fill:none;stroke:var(--accent);stroke-width:2.6;stroke-linecap:round;
+    stroke-dasharray:58 112;transform-origin:34px 34px;animation:spin 1.35s var(--ease-io) infinite;
+  }
+  .dual-b{
+    fill:none;stroke:var(--accent);stroke-width:2.2;stroke-dasharray:34 92;opacity:.4;
+    transform-origin:34px 34px;animation:spinBack 1.9s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes spinBack{to{transform:rotate(-360deg)}}
+
+  .sonar{position:relative;width:68px;height:68px;display:grid;place-items:center}
+  .sonar>span{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .sonar i{
+    position:absolute;inset:15px;border:1.6px solid var(--accent);border-radius:50%;opacity:0;
+    animation:sonar 2.4s var(--ease-out) infinite;
+  }
+  .sonar i:nth-child(2){animation-delay:1.2s}
+  @keyframes sonar{0%{transform:scale(.32);opacity:.85}75%{opacity:0}100%{transform:scale(2.3);opacity:0}}
+
+  .orbit{position:relative;width:68px;height:68px}
+  .orbit::before{content:"";position:absolute;inset:7px;border:1px dashed var(--line-strong);border-radius:50%}
+  .orbit .core{position:absolute;top:50%;left:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--accent)}
+  .orbit .arm{position:absolute;inset:0;animation:spin 2.1s linear infinite}
+  .orbit .arm i{
+    position:absolute;top:-3px;left:50%;width:7px;height:7px;margin-left:-3.5px;
+    border-radius:50%;background:var(--accent);
+  }
+
+  .matrix{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:50px;height:50px}
+  .matrix i{width:100%;aspect-ratio:1;border-radius:50%;background:var(--accent);opacity:.2;animation:mpulse 1.5s var(--ease-io) infinite}
+  @keyframes mpulse{0%,100%{opacity:.16;transform:scale(.7)}45%{opacity:1;transform:scale(1)}}
+
+  .radar{position:relative;width:66px;height:66px;border-radius:50%;border:1px solid var(--line-strong);overflow:hidden}
+  .radar .cross{
+    position:absolute;inset:0;
+    background:
+      linear-gradient(var(--line) 1px,transparent 1px) center/100% 1px no-repeat,
+      linear-gradient(90deg,var(--line) 1px,transparent 1px) center/1px 100% no-repeat;
+  }
+  .radar .sweep{
+    position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 0deg,transparent 0deg 268deg,var(--accent-soft) 330deg,var(--accent) 359deg,transparent 360deg);
+    animation:spin 2.3s linear infinite;
+  }
+
+  .petal{position:relative;width:56px;height:56px}
+  .petal i{
+    position:absolute;top:50%;left:50%;width:19px;height:19px;margin:-9.5px;
+    border:1.6px solid var(--accent);border-radius:50%;opacity:.2;
+    animation:petal 2.6s var(--ease-out) infinite;
+  }
+  .petal i:nth-child(1){--tx:0px;--ty:-13px;animation-delay:0s}
+  .petal i:nth-child(2){--tx:13px;--ty:0px;animation-delay:-1.95s}
+  .petal i:nth-child(3){--tx:0px;--ty:13px;animation-delay:-1.3s}
+  .petal i:nth-child(4){--tx:-13px;--ty:0px;animation-delay:-.65s}
+  @keyframes petal{
+    0%{transform:translate(0,0) scale(.55);opacity:.15}
+    40%{transform:translate(var(--tx),var(--ty)) scale(1);opacity:.9}
+    100%{transform:translate(var(--tx),var(--ty)) scale(1);opacity:0}
+  }
+
+  .flowbar{position:relative;width:100%;height:6px;border-radius:3px;background:var(--track);overflow:hidden}
+  .flowbar i{
+    position:absolute;top:0;left:0;height:100%;width:38%;border-radius:3px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);
+    animation:flow 1.9s var(--ease-io) infinite;animation-delay:-.55s;
+  }
+  @keyframes flow{0%{transform:translateX(-105%)}100%{transform:translateX(300%)}}
+
+  .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:44px;width:100%}
+  .wave i{width:3px;height:100%;background:var(--accent);border-radius:1px;transform-origin:center;animation:eq 1.05s ease-in-out infinite alternate}
+  @keyframes eq{from{transform:scaleY(.14);opacity:.6}to{transform:scaleY(1);opacity:1}}
+
+  .skeleton{position:relative;display:flex;flex-direction:column;gap:7px;width:100%;overflow:hidden}
+  .skeleton i{display:block;height:8px;border-radius:4px;background:var(--track)}
+  .skeleton i:nth-child(2){width:82%}
+  .skeleton i:nth-child(3){width:54%}
+  .skeleton::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg,transparent 32%,var(--accent-soft-2) 50%,transparent 68%);
+    background-size:220% 100%;animation:sheen 1.7s linear infinite;animation-delay:-.7s;
+  }
+  @keyframes sheen{from{background-position:190% 0}to{background-position:-90% 0}}
+
+  .counterflow{position:relative;width:100%;height:30px}
+  .counterflow i{position:absolute;left:0;height:3px;border-radius:2px;background:var(--accent);width:22%}
+  .counterflow i:first-child{top:8px;animation:c1 2s var(--ease-io) infinite;animation-delay:-.9s}
+  .counterflow i:last-child{bottom:8px;opacity:.45;animation:c2 2s var(--ease-io) infinite;animation-delay:-1.5s}
+  @keyframes c1{0%{transform:translateX(0)}100%{transform:translateX(355%)}}
+  @keyframes c2{0%{transform:translateX(355%)}100%{transform:translateX(0)}}
+
+  .bounce{display:flex;align-items:flex-end;gap:4px;height:12px}
+  .bounce i{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 1.2s var(--ease-io) infinite;animation-delay:-.4s}
+  .bounce i:nth-child(2){animation-delay:-.25s}
+  .bounce i:nth-child(3){animation-delay:-.1s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-7px);opacity:1}}
+
+  .typing{display:flex;gap:3px}
+  .typing i{width:4px;height:4px;border-radius:50%;background:var(--ink-2);animation:type 1.5s linear infinite;animation-delay:-.75s}
+  .typing i:nth-child(2){animation-delay:-.5s}
+  .typing i:nth-child(3){animation-delay:-.25s}
+  @keyframes type{0%,25%{opacity:.15}45%,100%{opacity:1}}
+
+  .detbar{width:100%;height:8px;border-radius:4px;background:var(--track);overflow:hidden}
+  .detbar i{display:block;height:100%;width:62%;background:var(--accent);border-radius:4px;transition:width 220ms var(--ease-out)}
+  .det-arc{
+    fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;
+    transform:rotate(-90deg);transform-origin:42px 42px;
+    transition:stroke-dasharray 220ms var(--ease-out);
+  }
+  .det-num{font:600 10.5px var(--mono);fill:var(--ink)}
+  .ticks{position:relative;width:74px;height:74px}
+  .ticks .tick{
+    position:absolute;top:1px;left:50%;width:2px;height:7px;margin-left:-1px;
+    background:var(--track);border-radius:1px;transform-origin:50% 36px;
+  }
+  .ticks .tick.lit{background:var(--accent)}
+  .tick-num{
+    position:absolute;inset:0;display:grid;place-items:center;
+    font:600 10.5px var(--mono);color:var(--ink);
+  }
+
+  .tracker{display:flex;align-items:flex-start;width:100%}
+  .tk-step{display:flex;flex-direction:column;align-items:center;gap:7px;flex:0 0 auto;width:60px}
+  .tk-dot{
+    width:22px;height:22px;border-radius:50%;border:1.6px solid var(--line-strong);
+    background:var(--surface);display:grid;place-items:center;
+    font-size:10px;color:var(--ink-3);position:relative;transition:all 200ms var(--ease-out);
+  }
+  .tk-l{font-size:10.5px;color:var(--ink-3);white-space:nowrap;transition:color 200ms ease}
+  .tk-step[data-s="done"] .tk-dot{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tk-step[data-s="done"] .tk-dot::after{content:"✓";font-size:10px;line-height:1}
+  .tk-step[data-s="done"] .tk-l{color:var(--ink-2)}
+  .tk-step[data-s="active"] .tk-dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tk-step[data-s="active"] .tk-dot::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .tk-step[data-s="active"] .tk-l{color:var(--ink);font-weight:600}
+  .tk-step[data-s="error"] .tk-dot{background:var(--err);border-color:var(--err);color:#fff}
+  .tk-step[data-s="error"] .tk-dot::after{content:"×";font-size:11px;line-height:1}
+  .tk-step[data-s="error"] .tk-l{color:var(--err)}
+  .tk-step[data-s="skip"] .tk-dot{border-style:dashed;color:var(--ink-3)}
+  .tk-step[data-s="skip"] .tk-dot::after{content:"–";font-size:10px;line-height:1}
+  .tk-line{flex:1 1 auto;height:1.6px;background:var(--track);margin-top:10px;min-width:10px;position:relative}
+  .tk-line i{position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform 320ms var(--ease-out)}
+  .tk-line.on i{transform:scaleX(1)}
+  .tracker.compact .tk-step{width:44px}
+
+  /* ---- 通知 ---- */
+  .msgbtn{
+    display:grid;grid-template-columns:26px 1fr;grid-template-rows:auto auto;gap:1px 9px;
+    align-items:center;text-align:left;padding:9px 10px;border:1px solid var(--line);
+    border-radius:7px;background:var(--surface-2);cursor:pointer;
+    transition:border-color 140ms ease,background 140ms ease;
+  }
+  .msgbtn:hover{border-color:var(--line-strong);background:var(--surface-3)}
+  .msgbtn .mi{
+    grid-row:span 2;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+  }
+  .mi.info{background:var(--accent-soft);color:var(--accent)}
+  .mi.q{background:var(--warn-soft);color:var(--warn)}
+  .mi.warn{background:var(--warn-soft);color:var(--warn)}
+  .mi.err{background:var(--err-soft);color:var(--err)}
+  .mb-t{font-size:12px;font-weight:600}
+  .msgbtn .tiny{font-size:9.5px}
+
+  #scrim{
+    position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:rgba(15,20,22,.34);backdrop-filter:blur(1.5px);animation:fadeIn 140ms ease;
+  }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .dialog{
+    width:404px;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;
+    box-shadow:0 26px 64px rgba(0,0,0,.3);overflow:hidden;animation:dlgIn 190ms var(--ease-out);
+  }
+  @keyframes dlgIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+  .dialog-h{display:flex;gap:11px;padding:16px 18px 0;align-items:flex-start}
+  .dialog-icon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto}
+  .dialog-t{font-size:13.5px;font-weight:640;margin:5px 0 0;line-height:1.3}
+  .dialog-m{padding:8px 18px 17px 59px;font-size:12px;color:var(--ink-2);line-height:1.7}
+  .dialog-f{display:flex;justify-content:flex-end;gap:8px;padding:11px 16px;border-top:1px solid var(--line);background:var(--surface-2)}
+
+  /* ---- 网络 ---- */
+  tr.sel{background:var(--accent-soft)}
+  tr.sel td{color:var(--ink)}
+  .radio-dot{
+    display:inline-block;width:13px;height:13px;border-radius:50%;
+    border:1.6px solid var(--line-strong);background:var(--surface);position:relative;
+  }
+  .radio-dot[aria-pressed="true"]{border-color:var(--accent)}
+  .radio-dot[aria-pressed="true"]::after{
+    content:"";position:absolute;inset:2.5px;border-radius:50%;background:var(--accent);
+  }
+  .stages{display:flex;flex-direction:column;gap:6px}
+  .srow{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--ink-3)}
+  .srow-bar{
+    flex:1;height:4px;border-radius:2px;background:var(--track);overflow:hidden;position:relative;
+  }
+  .srow-bar::after{
+    content:"";position:absolute;inset:0;background:var(--accent);transform:scaleX(0);
+    transform-origin:left;transition:transform 260ms linear;
+  }
+  .st.run .srow-bar::after{transform:scaleX(.55);animation:indet 900ms ease-in-out infinite alternate}
+  .st.done .srow-bar::after{transform:scaleX(1);transition:transform 180ms ease}
+  @keyframes indet{from{opacity:.45}to{opacity:1}}
+  .srow-l{flex:0 0 96px;font-family:var(--mono);font-size:10px;color:var(--ink-2)}
+  .srow-ms{flex:0 0 46px;text-align:right;font-family:var(--mono);font-size:10px}
+  .st.done .srow-ms{color:var(--ink-2)}
+  .st.err .srow-bar::after{background:var(--err);transform:scaleX(1)}
+  .st.err .st-l,.st.err .srow-ms{color:var(--err)}
+
+  .ping{display:flex;align-items:center;gap:9px}
+  .ping-h{flex:0 0 96px;font-size:10.5px;color:var(--ink-2)}
+  .ping-bar{flex:1;height:5px;border-radius:3px;background:var(--track);overflow:hidden}
+  .ping-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width 420ms var(--ease-out),background 200ms ease}
+  .ping-r{flex:0 0 52px;text-align:right;font-size:10px;color:var(--ink-3)}
+  .ping.bad .ping-bar i{background:var(--err)}
+  .ping.bad .ping-r{color:var(--err)}
+
+  .errbox{
+    display:flex;align-items:center;gap:7px;margin-top:10px;padding:7px 9px;
+    background:var(--err-soft);border:1px solid var(--err);border-radius:6px;color:var(--err);
+  }
+
+  /* ---- 系统 ---- */
+  .kv{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .kv-k{flex:0 0 132px;font:10px/1.5 var(--mono);color:var(--ink-3);letter-spacing:.02em}
+  .kv-v{flex:1;min-width:0;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thumb{
+    width:64px;height:52px;flex:0 0 auto;border:1px solid var(--line);border-radius:6px;
+    display:grid;place-items:center;color:var(--ink-3);background:var(--surface-2);
+  }
+
+  /* ---- 加密 ---- */
+  .outbox{
+    display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:5px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:6px;
+    font-size:11px;color:var(--ink);min-height:34px;
+  }
+  .outbox .mono{flex:1;min-width:0;word-break:break-all;line-height:1.55}
+  .warn-item{padding:7px 0;border-bottom:1px solid var(--line)}
+  .warn-item:last-child{border-bottom:0;padding-bottom:0}
+  .warn-item b{font-size:11.5px;font-weight:640;display:block;color:var(--ink)}
+  .warn-item p{margin:2px 0 0;font-size:10.5px;color:var(--ink-3);line-height:1.6}
+
+  /* ---- range ---- */
+  input[type="range"]{
+    -webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+    background:var(--track);outline:0;cursor:pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+    background:var(--accent);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--accent);
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:10px;height:10px;border-radius:50%;background:var(--accent);border:2px solid var(--surface);
+  }
+
+  /* ---- 全局暂停 / 收尾态 ---- */
+  #p-progress.p-success .arc-spin,
+  #p-progress.p-success .dual-a,
+  #p-progress.p-success .dual-b,
+  #p-progress.p-success .det-arc{stroke:var(--ok)}
+  #p-progress.p-error .arc-spin,
+  #p-progress.p-error .dual-a,
+  #p-progress.p-error .dual-b,
+  #p-progress.p-error .det-arc{stroke:var(--err)}
+  #p-progress.p-success .sonar>span{background:var(--ok)}
+  #p-progress.p-error .sonar>span{background:var(--err)}
+
+  .paused .kstage *,.paused .kstage *::after{animation-play-state:paused!important}
+  .reduced .arc-spin,.reduced .dual-a,.reduced .march{animation-duration:4.5s}
+  .reduced .sonar i,.reduced .petal i,.reduced .matrix i{animation:none;opacity:.5}
+  .reduced .flowbar i,.reduced .wave i,.reduced .skeleton::after{animation-duration:4s}
+</style>
+</head>
+<body>
+
+<!-- 图标集 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.6V20h12V9.6"/><path d="M10 20v-5h4v5"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="5.5" r="2.2"/><circle cx="18" cy="18.5" r="2.2"/><path d="M6 7.7v4.8a4 4 0 0 0 4 4h3.8"/><path d="M14 14h3.8v2.3"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h9"/><path d="M18 8h2"/><circle cx="15.5" cy="8" r="2.2"/><path d="M4 16h4"/><path d="M13 16h7"/><circle cx="10.5" cy="16" r="2.2"/></symbol>
+  <symbol id="i-loader" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4" opacity=".3"/><path d="M12 3.6a8.4 8.4 0 0 1 8.4 8.4"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20 4.8H4v11.4h4.2v3.4l3.9-3.4H20z"/></symbol>
+  <symbol id="i-net" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M3.6 12h16.8"/><path d="M12 3.6c4.2 4.4 4.2 12 0 16.8"/><path d="M12 3.6c-4.2 4.4-4.2 12 0 16.8"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.4"/><rect x="4" y="4" width="16" height="16" rx="2.4" opacity=".45"/><path d="M10 4V2.5M14 4V2.5M10 21.5V20M14 21.5V20M4 10H2.5M4 14H2.5M21.5 10H20M21.5 14H20"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.4" width="14" height="9.6" rx="2"/><path d="M8.4 10.4V7.8a3.6 3.6 0 0 1 7.2 0v2.6"/><path d="M12 14v2.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="5.8"/><path d="M15.2 15.2 20 20"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.6 4.5v15"/></symbol>
+  <symbol id="i-win-min" viewBox="0 0 24 24"><path d="M6 12.5h12"/></symbol>
+  <symbol id="i-win-max" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11"/></symbol>
+  <symbol id="i-win-close" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13"/><path d="M13 7l5 5-5 5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="1.8"/><path d="M15 9V5.6A1.6 1.6 0 0 0 13.4 4H5.6A1.6 1.6 0 0 0 4 5.6v7.8A1.6 1.6 0 0 0 5.6 15H9"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5 18 12 8 18.5z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5.5v13M15 5.5v13"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 9.5 17 19 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17"/></symbol>
+  <symbol id="i-bang" viewBox="0 0 24 24"><path d="M12 5.5v8"/><path d="M12 17.2v.2"/></symbol>
+  <symbol id="i-q" viewBox="0 0 24 24"><path d="M9.4 9.2a2.7 2.7 0 1 1 3.5 2.6c-.6.2-.9.7-.9 1.4v.4"/><path d="M12 17.2v.2"/></symbol>
+</svg>
+
+<div class="win">
+
+  <!-- ================= 标题栏 ================= -->
+  <header class="titlebar">
+    <div class="brand">
+      <div class="brand-mark">YY</div>
+      <div class="brand-name">YoYo.Toolkit</div>
+      <div class="brand-sep"></div>
+      <div class="brand-sub">示例程序</div>
+      <div class="ver">v1.0.0</div>
+    </div>
+    <div class="titlebar-spacer"></div>
+    <label class="findbox">
+      <svg class="icon sm" style="color:var(--ink-3)"><use href="#i-search"/></svg>
+      <input id="globalFind" type="text" placeholder="搜索模块" autocomplete="off" />
+      <span class="kbd">Ctrl K</span>
+    </label>
+    <div class="win-btns">
+      <button class="win-btn" title="最小化"><svg class="icon sm"><use href="#i-win-min"/></svg></button>
+      <button class="win-btn" title="最大化"><svg class="icon sm"><use href="#i-win-max"/></svg></button>
+      <button class="win-btn close" title="关闭"><svg class="icon sm"><use href="#i-win-close"/></svg></button>
+    </div>
+  </header>
+
+  <div class="shell">
+
+    <!-- ================= 侧栏 ================= -->
+    <nav class="side" aria-label="模块导航">
+      <div class="side-top">
+        <label class="side-filter">
+          <svg class="icon sm" style="color:var(--ink-3)"><use href="#i-search"/></svg>
+          <input id="navFind" type="text" placeholder="筛选页面" autocomplete="off" />
+        </label>
+        <button class="rail-btn" id="railBtn" title="折叠导航">
+          <svg class="icon sm"><use href="#i-panel"/></svg>
+        </button>
+      </div>
+      <div class="nav" id="navRoot"><!--JS:NAV--></div>
+      <div class="side-foot">
+        <div class="side-stat"><span>MainNavigation</span><b style="margin-left:auto">8</b></div>
+        <div class="side-stat"><span>IGetService</span><b style="margin-left:auto">Shell</b></div>
+      </div>
+    </nav>
+
+    <!-- ================= 主区 ================= -->
+    <div class="main">
+      <div class="pagehead">
+        <div class="ph-left">
+          <div class="crumb">
+            <span>MainNavigation</span>
+            <span style="opacity:.5">/</span>
+            <b id="phKey">OverviewView</b>
+          </div>
+          <div class="ph-title"><h1 id="phTitle">概览</h1></div>
+          <p class="ph-lede" id="phLede"></p>
+        </div>
+        <div class="ph-right">
+          <div class="seg" role="group" aria-label="主题">
+            <button data-theme-btn="light" aria-pressed="true">浅色</button>
+            <button data-theme-btn="dark" aria-pressed="false">深色</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="content" id="content">
+
+        <!-- ============ 01 概览 ============ -->
+        <section class="page on" id="p-overview">
+
+          <div class="hero card">
+            <div class="hero-l">
+              <div class="eyebrow">WPF · 无 MVVM 框架依赖 · 按块取用</div>
+              <h2>示例程序本身，就是一次导航演示</h2>
+              <p>
+                八个模块各占一页，切换全部由 <code>BaseNavigation.GoTo</code> 驱动：离开时旧 ViewModel 收到
+                <code>NavigateOut</code>，进入时新 ViewModel 收到 <code>NavigateIn&lt;T&gt;</code>，
+                视图实例由宿主 <code>IGetService</code> 提供。左侧导航里每一行，都对应一个 <code>NavigateModel</code>。
+              </p>
+              <div class="row wrap" style="gap:8px;margin-top:15px">
+                <button class="btn primary" data-go="navigation">
+                  <svg class="icon sm"><use href="#i-route"/></svg>看导航怎么接线
+                </button>
+                <button class="btn" data-go="progress">看 20 种动效</button>
+                <button class="btn" data-go="notifies">看消息框</button>
+              </div>
+            </div>
+            <div class="hero-r">
+              <div class="stat"><b>43</b><span>源文件</span></div>
+              <div class="stat"><b>27</b><span>公开类型</span></div>
+              <div class="stat"><b>20</b><span>不确定动效</span></div>
+              <div class="stat"><b>0</b><span>三方依赖</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>模块索引</h2>
+            <div class="rule"></div>
+            <span class="cnt">8 NavigateModel · 点击进入</span>
+          </div>
+
+          <div class="grid g4" id="modGrid">
+            <button class="modcard card hov" data-go="overview">
+              <div class="modcard-top"><span class="idx">01</span><span class="k">OverviewView</span></div>
+              <div class="modcard-b">
+                <h3>概览</h3>
+                <p>当前页。模块索引、启动代码与设计令牌</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="navigation">
+              <div class="modcard-top"><span class="idx">02</span><span class="k">NavigationView</span></div>
+              <div class="modcard-b">
+                <h3>导航与窗口</h3>
+                <p>生命周期钩子、强类型参数、多窗口注册与跨线程关闭</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="controls">
+              <div class="modcard-top"><span class="idx">03</span><span class="k">ControlsView</span></div>
+              <div class="modcard-b">
+                <h3>控件</h3>
+                <p>水印输入框、树形下拉、图标选项、描边文字、圆环</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="progress">
+              <div class="modcard-top"><span class="idx">04</span><span class="k">ProgressView</span></div>
+              <div class="modcard-b">
+                <h3>进度</h3>
+                <p>20 种动效 + 三套确定态 + 流程步骤条，换肤只换令牌</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="notifies">
+              <div class="modcard-top"><span class="idx">05</span><span class="k">NotifiesView</span></div>
+              <div class="modcard-b">
+                <h3>通知</h3>
+                <p>四级消息框，外观由宿主窗口决定，不依赖系统 MessageBox</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="net">
+              <div class="modcard-top"><span class="idx">06</span><span class="k">NetView</span></div>
+              <div class="modcard-b">
+                <h3>网络</h3>
+                <p>请求/响应基类、同步与异步调用、错误回调、连通性检测</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="system">
+              <div class="modcard-top"><span class="idx">07</span><span class="k">SystemView</span></div>
+              <div class="modcard-b">
+                <h3>系统与工具</h3>
+                <p>硬盘序列号、主板 ID、Unix 时间戳、位图加载、值转换器</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+
+            <button class="modcard card hov" data-go="crypto">
+              <div class="modcard-top"><span class="idx">08</span><span class="k">CryptoView</span></div>
+              <div class="modcard-b">
+                <h3>加密</h3>
+                <p>MD5 摘要（32 / 16 位、大小写）与 AES 加解密</p>
+              </div>
+              <svg class="icon modcard-arrow"><use href="#i-arrow"/></svg>
+            </button>
+          </div>
+
+          <div class="sec">
+            <h2>接线</h2>
+            <div class="rule"></div>
+            <span class="cnt">三处改动，示例就长出了导航</span>
+          </div>
+
+          <div class="grid" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)">
+            <div class="card">
+              <div class="card-h"><span class="card-t">MainNavigation : BaseNavigation</span><span class="k accent" style="margin-left:auto">C#</span></div>
+              <div class="card-b">
+<pre class="code"><span class="c">// 1. 页面登记表：ViewType 即 GoTo 的 key</span>
+<span class="kw">public sealed class</span> <span class="ty">MainNavigation</span>
+    : <span class="ty">BaseNavigation</span>
+{
+    <span class="kw">public</span> MainNavigation(<span class="ty">IGetService</span> svc)
+        : <span class="kw">base</span>(svc) { }
+
+    <span class="kw">public override string</span> NavigationName
+        => <span class="st">"Main"</span>;
+
+    <span class="kw">public override</span> List&lt;<span class="ty">NavigateModel</span>&gt; Navigates
+        => <span class="kw">new</span>()
+    {
+        <span class="kw">new</span> <span class="ty">NavigateModel</span>
+        {
+            ViewType = <span class="st">"OverviewView"</span>,
+            Type     = <span class="kw">typeof</span>(<span class="ty">OverviewView</span>),
+            VMType   = <span class="kw">typeof</span>(<span class="ty">OverviewViewModel</span>),
+            Name     = <span class="st">"概览"</span>,
+        },
+        <span class="c">// …其余 7 页同构</span>
+    };
+
+    <span class="kw">public override void</span> InitView() { }
+}
+
+<span class="c">// 2. 侧栏点击 → 一行调用</span>
+navigation.GoTo(<span class="st">"ProgressView"</span>);
+
+<span class="c">// 强类型参数：VM 实现 INavigateIn&lt;T&gt;</span>
+navigation.GoTo(<span class="st">"DeviceView"</span>, <span class="st">"SN-0001"</span>);</pre>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-t">三条约定</span></div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:0">
+                <div class="rule-item">
+                  <span class="rule-n">01</span>
+                  <div><b>ViewType 是唯一 key</b><p>字符串匹配 <code>Navigates</code>，找不到返回 <code>null</code>，不会抛异常。</p></div>
+                </div>
+                <div class="rule-item">
+                  <span class="rule-n">02</span>
+                  <div><b>ViewModel 决定收不收参数</b><p>实现 <code>INavigateIn</code> 收无参调用，实现 <code>INavigateIn&lt;T&gt;</code> 收参数，两者都在 <code>GoTo</code> 里被自动识别。</p></div>
+                </div>
+                <div class="rule-item">
+                  <span class="rule-n">03</span>
+                  <div><b>离开即释放</b><p>旧视图的 <code>DataContext</code> 若实现 <code>INavigateOut</code>，先回调再换视图——轮询与订阅在这里收尾。</p></div>
+                </div>
+              </div>
+              <div class="card-f">
+                <span class="k plain">Navigations/BaseNavigation.cs</span>
+                <span class="spacer"></span>
+                <span>103 行</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>设计令牌</h2>
+            <div class="rule"></div>
+            <span class="cnt">键名对齐 Progress.Brush.*，落地时一一映射</span>
+          </div>
+
+          <div class="card">
+            <div class="card-b">
+              <div class="swatches">
+                <div class="swatch"><i style="background:var(--accent)"></i><b>Accent</b><span class="mono">#0E7C7B</span></div>
+                <div class="swatch"><i style="background:var(--ink)"></i><b>Ink</b><span class="mono">#0F1416</span></div>
+                <div class="swatch"><i style="background:var(--ink-2)"></i><b>InkSecondary</b><span class="mono">#565F63</span></div>
+                <div class="swatch"><i style="background:var(--ink-3)"></i><b>InkDim</b><span class="mono">#8C969B</span></div>
+                <div class="swatch"><i style="background:var(--surface)"></i><b>Surface</b><span class="mono">#FFFFFF</span></div>
+                <div class="swatch"><i style="background:var(--app)"></i><b>Page</b><span class="mono">#F2F3F4</span></div>
+                <div class="swatch"><i style="background:var(--ok)"></i><b>Success</b><span class="mono">#2E7D53</span></div>
+                <div class="swatch"><i style="background:var(--warn)"></i><b>Warning</b><span class="mono">#B4700F</span></div>
+                <div class="swatch"><i style="background:var(--err)"></i><b>Error</b><span class="mono">#B3372C</span></div>
+              </div>
+              <div class="hr"></div>
+              <div class="row wrap" style="gap:20px;font-size:11px;color:var(--ink-3)">
+                <span>正文 <b class="mono" style="color:var(--ink-2)">13 / 1.6</b></span>
+                <span>页标题 <b class="mono" style="color:var(--ink-2)">19 / 640</b></span>
+                <span>卡片标题 <b class="mono" style="color:var(--ink-2)">12.5 / 640</b></span>
+                <span>键名 <b class="mono" style="color:var(--ink-2)">10 mono</b></span>
+                <span>圆角 <b class="mono" style="color:var(--ink-2)">9 / 6</b></span>
+                <span>栅格 <b class="mono" style="color:var(--ink-2)">13px gap</b></span>
+              </div>
+            </div>
+          </div>
+
+        </section>
+        <!-- ============ 02 导航与窗口 ============ -->
+        <section class="page" id="p-navigation">
+
+          <div class="grid" style="grid-template-columns:minmax(0,1.42fr) minmax(0,1fr)">
+
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0">
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">一次 GoTo 的完整时序</span>
+                  <span class="k" style="margin-left:auto">GoTo&lt;T&gt;(name, param)</span>
+                </div>
+                <div class="card-b">
+                  <div class="tl" id="tl">
+                    <div class="tl-node" data-i="0">
+                      <div class="tl-dot">1</div>
+                      <div class="tl-t">NavigateOut</div>
+                      <div class="tl-d">旧 VM 释放</div>
+                    </div>
+                    <div class="tl-link" data-i="0"><i></i></div>
+                    <div class="tl-node" data-i="1">
+                      <div class="tl-dot">2</div>
+                      <div class="tl-t">NavigateIn&lt;T&gt;</div>
+                      <div class="tl-d">新 VM 收参</div>
+                    </div>
+                    <div class="tl-link" data-i="1"><i></i></div>
+                    <div class="tl-node" data-i="2">
+                      <div class="tl-dot">3</div>
+                      <div class="tl-t">GetService</div>
+                      <div class="tl-d">解析视图实例</div>
+                    </div>
+                    <div class="tl-link" data-i="2"><i></i></div>
+                    <div class="tl-node" data-i="3">
+                      <div class="tl-dot">4</div>
+                      <div class="tl-t">SetView</div>
+                      <div class="tl-d">挂载到宿主</div>
+                    </div>
+                  </div>
+
+                  <div class="hr"></div>
+
+                  <div style="margin-top:12px">
+                    <div class="field-l" style="margin-bottom:7px">发起跳转</div>
+                    <div class="row wrap" style="gap:6px">
+                      <button class="btn sm" data-goto="OverviewView" data-param="">
+                        GoTo(<span class="mono">"OverviewView"</span>)
+                      </button>
+                      <button class="btn sm primary" data-goto="DeviceView" data-param="SN-0001">
+                        GoTo(<span class="mono">"DeviceView"</span>, <span class="mono">"SN-0001"</span>)
+                      </button>
+                      <button class="btn sm" data-goto="DeviceView" data-param="SN-0042">
+                        GoTo(<span class="mono">"DeviceView"</span>, <span class="mono">"SN-0042"</span>)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="mount">
+                    <div class="mount-l">
+                      <span class="field-l">当前挂载视图</span>
+                      <div class="mount-v" id="mountView">OverviewView</div>
+                    </div>
+                    <div class="mount-l">
+                      <span class="field-l">传入参数</span>
+                      <div class="mount-v" id="mountParam">null</div>
+                    </div>
+                    <div class="mount-l">
+                      <span class="field-l">VM 类型</span>
+                      <div class="mount-v" id="mountVm">OverviewViewModel</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card-f">
+                  <span>空 name 或未命中 ViewType：返回 <span class="mono">null</span>，不抛异常</span>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">日志</span>
+                  <span class="k plain" style="margin-left:auto">LogWrite → 状态栏</span>
+                  <button class="btn ghost sm" id="clearLog">清空</button>
+                </div>
+                <div class="log" id="navLog" style="height:148px;border:0;border-radius:0;background:transparent">
+                  <div class="ln"><span class="t">22:13:58</span><span class="m">ShellService 就绪 · IGetService → 宿主 IServiceProvider</span></div>
+                  <div class="ln"><span class="t">22:13:58</span><span class="m">MainNavigation.InitView() · 无预加载视图</span></div>
+                  <div class="ln"><span class="t">22:13:59</span><span class="m ac">MainNavigation 已注册 8 个 NavigateModel</span></div>
+                  <div class="ln"><span class="t">22:13:59</span><span class="m ok">GoTo("OverviewView") · 首个视图挂载完成</span></div>
+                  <div class="ln"><span class="t">22:14:00</span><span class="m">NavigateIn() · OverviewViewModel 就绪</span></div>
+                </div>
+                <div class="card-f">
+                  <span class="k plain">NavigationName = "Main"</span>
+                  <span class="spacer"></span>
+                  <span>日志同时写入状态栏中央</span>
+                </div>
+              </div>
+
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0">
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">Navigates</span>
+                  <span class="k" style="margin-left:auto">List&lt;NavigateModel&gt;</span>
+                </div>
+                <div class="card-b" style="padding:9px 6px 4px">
+                  <table class="tb">
+                    <thead><tr><th>Name</th><th>ViewType</th><th>VMType</th></tr></thead>
+                    <tbody>
+                      <tr data-jump="overview"><td class="nm">概览</td><td><span class="k plain">OverviewView</span></td><td class="mono tiny">OverviewViewModel</td></tr>
+                      <tr data-jump="navigation"><td class="nm">导航与窗口</td><td><span class="k plain">NavigationView</span></td><td class="mono tiny">NavigationViewModel</td></tr>
+                      <tr data-jump="controls"><td class="nm">控件</td><td><span class="k plain">ControlsView</span></td><td class="mono tiny">ControlsViewModel</td></tr>
+                      <tr data-jump="progress"><td class="nm">进度</td><td><span class="k plain">ProgressView</span></td><td class="mono tiny">ProgressViewModel</td></tr>
+                      <tr data-jump="notifies"><td class="nm">通知</td><td><span class="k plain">NotifiesView</span></td><td class="mono tiny">NotifiesViewModel</td></tr>
+                      <tr data-jump="net"><td class="nm">网络</td><td><span class="k plain">NetView</span></td><td class="mono tiny">NetViewModel</td></tr>
+                      <tr data-jump="system"><td class="nm">系统与工具</td><td><span class="k plain">SystemView</span></td><td class="mono tiny">SystemViewModel</td></tr>
+                      <tr data-jump="crypto"><td class="nm">加密</td><td><span class="k plain">CryptoView</span></td><td class="mono tiny">CryptoViewModel</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-f"><span>点击任意行 = 一次 GoTo，试试看</span></div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">WindowService</span>
+                  <span class="k" style="margin-left:auto">IWindowService</span>
+                </div>
+                <div class="card-b" style="display:flex;flex-direction:column;gap:7px">
+                  <div class="winrow" data-win="main">
+                    <svg class="icon sm" style="color:var(--ink-3)"><use href="#i-panel"/></svg>
+                    <span class="winrow-t">MainWindow</span>
+                    <span class="k plain tiny">windowId = null</span>
+                    <span class="winrow-s on">已注册</span>
+                    <button class="btn sm ghost" disabled>关闭</button>
+                  </div>
+                  <div class="winrow" data-win="device">
+                    <svg class="icon sm" style="color:var(--ink-3)"><use href="#i-cpu"/></svg>
+                    <span class="winrow-t">DevicePanel</span>
+                    <span class="k plain tiny">"device-panel"</span>
+                    <span class="winrow-s on">已注册</span>
+                    <button class="btn sm" data-close-win="device">关闭</button>
+                  </div>
+                  <div class="winrow" data-win="log">
+                    <svg class="icon sm" style="color:var(--ink-3)"><use href="#i-msg"/></svg>
+                    <span class="winrow-t">LogViewer</span>
+                    <span class="k plain tiny">"log-viewer"</span>
+                    <span class="winrow-s on">已注册</span>
+                    <button class="btn sm" data-close-win="log">关闭</button>
+                  </div>
+                </div>
+                <div class="card-f">
+                  <span>设备线程里 <span class="mono">CloseWindow("log-viewer")</span> 会 <span class="mono">Dispatcher</span> 回主线程</span>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-h"><span class="card-t">VM 生命周期</span><span class="k" style="margin-left:auto">Interfaces/Navigations</span></div>
+                <div class="card-b">
+<pre class="code" style="max-height:none"><span class="kw">public sealed class</span> <span class="ty">DeviceViewModel</span>
+    : <span class="ty">INavigateIn</span>&lt;<span class="kw">string</span>&gt;, <span class="ty">INavigateOut</span>
+{
+    <span class="kw">public void</span> NavigateIn(<span class="kw">string</span>? sn)
+        => <span class="c">/* 按 SN 拉配置、开轮询 */</span>;
+
+    <span class="kw">public void</span> NavigateOut()
+        => <span class="c">/* 停轮询、退订阅、存草稿 */</span>;
+}</pre>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+        <!-- ============ 03 控件 ============ -->
+        <section class="page" id="p-controls">
+
+          <div class="note">
+            <svg class="icon sm" style="color:var(--warn)"><use href="#i-bang"/></svg>
+            <span>除 <code>Controls.Progress</code> 外，包内不提供其它控件的主题字典——<code>TProgressRing</code>、<code>IconRadioButton</code>、<code>TreeComboBox</code> 需要宿主提供 <code>Style</code>，本页样式即宿主示例。</span>
+          </div>
+
+          <div class="grid g2" style="margin-top:13px">
+
+            <!-- 水印输入框 -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">PlaceholderTextBox</span>
+                <span class="k" style="margin-left:auto">Controls.Text</span>
+              </div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:9px">
+                <div class="field">
+                  <span class="field-l">PlaceHolderText</span>
+                  <input class="in" placeholder="请输入样本编号" />
+                </div>
+                <div class="field">
+                  <span class="field-l">IsShowError = True</span>
+                  <input class="in err" value="SAMPLE-0000" />
+                </div>
+                <div class="field">
+                  <span class="field-l">CornerRadius = 14（胶囊）</span>
+                  <input class="in" style="border-radius:14px" placeholder="搜索…" />
+                </div>
+                <pre class="code" style="margin-top:3px"><span class="c">&lt;!-- 以代码绘制为主，可直接使用 --&gt;</span>
+&lt;yy:PlaceholderTextBox
+    PlaceHolderText=<span class="st">"请输入样本编号"</span> /&gt;</pre>
+              </div>
+              <div class="card-f">
+                <span class="k plain">TransformX / TransformY</span>
+                <span class="spacer"></span>
+                <span>水印位置可偏移</span>
+              </div>
+            </div>
+
+            <!-- 树形下拉 -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">TreeComboBox</span>
+                <span class="k" style="margin-left:auto">Controls.ComboBox</span>
+              </div>
+              <div class="card-b">
+                <div class="treecombo open" id="treeCombo">
+                  <button class="tc-field" id="tcField" aria-expanded="true">
+                    <span id="tcText" class="muted">请选择设备</span>
+                    <svg class="icon sm tc-caret"><use href="#i-arrow"/></svg>
+                  </button>
+                  <div class="tc-pop" id="tcPop">
+                    <div class="tc-group" data-open="true">
+                      <button class="tc-row tc-root"><svg class="icon sm tc-tw"><use href="#i-arrow"/></svg>产线 A · 装配</button>
+                      <button class="tc-row lv2 leaf" data-val="A-01">设备 A-01</button>
+                      <button class="tc-row lv2 leaf" data-val="A-02">设备 A-02</button>
+                      <button class="tc-row lv2 leaf" data-val="A-03">设备 A-03</button>
+                    </div>
+                    <div class="tc-group">
+                      <button class="tc-row tc-root"><svg class="icon sm tc-tw"><use href="#i-arrow"/></svg>产线 B · 老化</button>
+                      <button class="tc-row lv2 leaf" data-val="B-01">设备 B-01</button>
+                      <button class="tc-row lv2 leaf" data-val="B-02">设备 B-02</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="row wrap" style="gap:14px;margin-top:11px">
+                  <label class="sw"><input type="checkbox" id="tcDrop" checked><span class="sw-track"></span>IsDorpDown</label>
+                  <label class="sw"><input type="checkbox" id="tcLeaf" checked><span class="sw-track"></span>IsOnlyLastNode</label>
+                </div>
+              </div>
+              <div class="card-f">
+                <span>节点实现 <span class="mono">ITreeModel</span>（DisplayName / HasChildren）</span>
+                <span class="spacer"></span>
+                <span class="mono" id="tcCmd">SelectCommand: —</span>
+              </div>
+            </div>
+
+            <!-- 图标选项 -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">IconRadioButton</span>
+                <span class="k" style="margin-left:auto">Controls.Button</span>
+              </div>
+              <div class="card-b">
+                <div class="irgroup" id="irGroup" data-value="运行">
+                  <button class="irbtn" data-val="运行" aria-pressed="true"><svg class="icon lg"><use href="#i-play"/></svg><span>运行</span></button>
+                  <button class="irbtn" data-val="暂停"><svg class="icon lg"><use href="#i-pause"/></svg><span>暂停</span></button>
+                  <button class="irbtn" data-val="停止"><svg class="icon lg"><use href="#i-x"/></svg><span>停止</span></button>
+                </div>
+                <div class="hr"></div>
+                <div class="row" style="gap:16px">
+                  <span class="field-l" style="flex:0 0 auto">IconForeground</span>
+                  <div class="row" style="gap:6px" id="irColors">
+                    <button class="swatchdot" data-color="var(--accent)" style="background:var(--accent);border-color:var(--accent)" aria-pressed="true"></button>
+                    <button class="swatchdot" data-color="var(--warn)" style="background:var(--warn)"></button>
+                    <button class="swatchdot" data-color="var(--ok)" style="background:var(--ok)"></button>
+                    <button class="swatchdot" data-color="var(--err)" style="background:var(--err)"></button>
+                  </div>
+                  <span class="spacer"></span>
+                  <span class="mono tiny muted" id="irOut">GroupName = "Mode" · 选中 运行</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 描边文字 -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">OutlineText</span>
+                <span class="k" style="margin-left:auto">Controls.Text</span>
+              </div>
+              <div class="card-b">
+                <div class="stage" style="padding:18px;display:grid;place-items:center;min-height:96px">
+                  <div class="outline-txt" id="outlineTxt">SYSTEM READY</div>
+                </div>
+                <div class="seg" style="margin-top:11px" id="strokeSeg" role="group">
+                  <button data-stroke="outside" aria-pressed="true">Outside</button>
+                  <button data-stroke="center" aria-pressed="false">Center</button>
+                  <button data-stroke="inside" aria-pressed="false">Inside</button>
+                </div>
+              </div>
+              <div class="card-f"><span>纯代码绘制，无模板依赖</span><span class="spacer"></span><span class="mono">StrokePosition</span></div>
+            </div>
+
+            <!-- TProgressRing -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">TProgressRing</span>
+                <span class="k" style="margin-left:auto">Controls.BusyIndicators</span>
+              </div>
+              <div class="card-b">
+                <div class="stage" style="padding:20px;display:flex;align-items:center;justify-content:center;gap:44px">
+                  <div class="ringwrap"><svg class="ring" width="28" height="28"><circle cx="14" cy="14" r="11"/></svg><span class="tiny muted">28</span></div>
+                  <div class="ringwrap"><svg class="ring" width="40" height="40"><circle cx="20" cy="20" r="16"/></svg><span class="tiny muted">40</span></div>
+                  <div class="ringwrap"><svg class="ring lg" width="56" height="56"><circle cx="28" cy="28" r="23"/></svg><span class="tiny muted">56</span></div>
+                </div>
+                <div class="row" style="margin-top:6px">
+                  <label class="sw"><input type="checkbox" id="ringActive" checked><span class="sw-track"></span>IsActive</label>
+                  <span class="spacer"></span>
+                  <span class="mono tiny muted">StrokeDashArray + RotateTransform</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 密码 + 软键盘 -->
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">PasswordHelper · OSKHelper</span>
+                <span class="k" style="margin-left:auto">Input</span>
+              </div>
+              <div class="card-b">
+                <div class="field">
+                  <span class="field-l">Password="{Binding Password, Mode=TwoWay}"</span>
+                  <div class="row" style="gap:6px">
+                    <input class="in" id="pwdInput" type="password" value="admin123" />
+                    <button class="btn sm" id="pwdEye" style="flex:0 0 auto">显示</button>
+                    <button class="btn sm" id="oskBtn" style="flex:0 0 auto">软键盘</button>
+                  </div>
+                </div>
+                <div class="osk" id="osk">
+                  <div class="osk-keys">
+                    <button>1</button><button>2</button><button>3</button>
+                    <button>4</button><button>5</button><button>6</button>
+                    <button>7</button><button>8</button><button>9</button>
+                    <button class="wide">0</button><button class="wide">⌫</button>
+                  </div>
+                  <div class="tiny muted" style="margin-top:6px">触摸屏场景：OSKHelper 把输入回填到当前焦点控件</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="sec">
+            <h2>值转换器</h2>
+            <div class="rule"></div>
+            <span class="cnt">Converters · 4 个开箱即用</span>
+          </div>
+
+          <div class="card">
+            <div class="card-b" style="padding:0">
+              <table class="tb">
+                <thead><tr><th>转换器</th><th>作用</th><th style="width:38%">实时验证</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td class="nm">BoolToVisibilityConverter</td>
+                    <td class="tiny">true → Visible，false → Collapsed</td>
+                    <td>
+                      <div class="row"><label class="sw"><input type="checkbox" id="cvBool" checked><span class="sw-track"></span></label>
+                      <span class="cv-box" id="cvBoolBox">可见</span></div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="nm">BoolToReverseConverter</td>
+                    <td class="tiny">取反，与上者串联做「空态提示」</td>
+                    <td><div class="row"><label class="sw"><input type="checkbox" id="cvRev"><span class="sw-track"></span></label>
+                      <span class="cv-box" id="cvRevBox">取反后可见</span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="nm">NullToVisibilityConverter</td>
+                    <td class="tiny">值为 null → Collapsed</td>
+                    <td><div class="row"><input class="in sm" id="cvNull" value="SN-0001" style="width:110px" />
+                      <span class="cv-box" id="cvNullBox">非空</span><span class="tiny muted">清空试试</span></div></td>
+                  </tr>
+                  <tr>
+                    <td class="nm">PercentToTextConverter</td>
+                    <td class="tiny">0~1 → "62.0%"，与弧线共用同一输入</td>
+                    <td><div class="row"><input type="range" min="0" max="100" value="62" id="cvRange" style="flex:1" />
+                      <span class="mono tiny" id="cvRangeOut" style="width:52px;text-align:right">62.0%</span></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+        <!-- ============ 04 进度 ============ -->
+        <section class="page" id="p-progress">
+
+          <div class="card toolbar">
+            <div class="row wrap" style="gap:10px">
+              <button class="btn" id="progPause">
+                <svg class="icon sm"><use href="#i-pause"/></svg><span>暂停动画</span>
+              </button>
+              <div class="tb-sep"></div>
+              <span class="field-l" style="flex:0 0 auto">Value</span>
+              <input type="range" min="0" max="100" value="62" id="progValue" style="width:190px" />
+              <span class="mono tiny" id="progValueOut" style="width:42px">62</span>
+              <div class="tb-sep"></div>
+              <span class="field-l" style="flex:0 0 auto">State</span>
+              <div class="seg" id="progState">
+                <button data-state="running" aria-pressed="true">Running</button>
+                <button data-state="reduced" aria-pressed="false">RunningReduced</button>
+                <button data-state="success" aria-pressed="false">Success</button>
+                <button data-state="error" aria-pressed="false">Error</button>
+              </div>
+              <span class="spacer"></span>
+              <span class="k accent" id="progStateChip">State = Running</span>
+              <span class="k">Themes/Generic.xaml</span>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>环形 · 12 种中的 8 种</h2>
+            <div class="rule"></div>
+            <span class="cnt">纯声明式 Storyboard</span>
+          </div>
+
+          <div class="grid g4 stage-wrap" id="progRing">
+            <div class="kindcard">
+              <div class="stage kstage">
+                <svg class="pg-arc" width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="27" class="trk"/>
+                  <circle cx="34" cy="34" r="27" class="arc-spin"/>
+                </svg>
+              </div>
+              <div class="kfoot"><b>旋转弧环</b><span class="k plain">Arc</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <svg class="pg-march" width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="27" class="trk"/>
+                  <circle cx="34" cy="34" r="27" class="march"/>
+                </svg>
+              </div>
+              <div class="kfoot"><b>行进虚线环</b><span class="k plain">MarchingRing</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <svg class="pg-dual" width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="27" class="trk"/>
+                  <circle cx="34" cy="34" r="27" class="dual-a"/>
+                  <circle cx="34" cy="34" r="20" class="dual-b"/>
+                </svg>
+              </div>
+              <div class="kfoot"><b>对流双环</b><span class="k plain">DualRing</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="sonar"><i></i><i></i><span></span></div>
+              </div>
+              <div class="kfoot"><b>声纳波纹</b><span class="k plain">Sonar</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="orbit"><span class="core"></span><span class="arm"><i></i></span></div>
+              </div>
+              <div class="kfoot"><b>轨道点</b><span class="k plain">Orbit</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="matrix" id="matrixDots"></div>
+              </div>
+              <div class="kfoot"><b>点阵涟漪</b><span class="k plain">DotMatrix</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="radar"><span class="sweep"></span><span class="cross"></span></div>
+              </div>
+              <div class="kfoot"><b>雷达扫描</b><span class="k plain">Radar</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="petal"><i></i><i></i><i></i><i></i></div>
+              </div>
+              <div class="kfoot"><b>花瓣绽放</b><span class="k plain">Petal</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>条形与波形</h2>
+            <div class="rule"></div>
+            <span class="cnt">ProgressPainter 自绘阵列 · 6 种中的 4 种</span>
+          </div>
+
+          <div class="grid g2">
+            <div class="kindcard">
+              <div class="stage kstage" style="padding:22px 26px">
+                <div class="flowbar"><i></i></div>
+              </div>
+              <div class="kfoot"><b>流动扫光条</b><span class="k plain">FlowBar</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage" style="padding:20px 26px">
+                <div class="wave" id="waveBars"></div>
+              </div>
+              <div class="kfoot"><b>行波线</b><span class="k plain">Wave</span><span class="tiny muted">Phase 驱动相位</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage" style="padding:22px 26px">
+                <div class="skeleton"><i></i><i></i><i></i></div>
+              </div>
+              <div class="kfoot"><b>骨架扫光</b><span class="k plain">Skeleton</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage" style="padding:24px 26px">
+                <div class="counterflow"><i></i><i></i></div>
+              </div>
+              <div class="kfoot"><b>对向游走</b><span class="k plain">CounterFlow</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>行内小型</h2>
+            <div class="rule"></div>
+            <span class="cnt">配 StatusText 使用</span>
+          </div>
+
+          <div class="grid g2">
+            <div class="card">
+              <div class="card-b row" style="gap:14px">
+                <div class="bounce"><i></i><i></i><i></i></div>
+                <span style="font-size:12px;color:var(--ink-2)">正在采集</span>
+                <span class="spacer"></span>
+                <span class="k plain">BounceDots</span>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-b row" style="gap:14px">
+                <span style="font-size:12px;color:var(--ink-2)">分析样本</span>
+                <div class="typing"><i></i><i></i><i></i></div>
+                <span class="spacer"></span>
+                <span class="k plain">Typing</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>确定态</h2>
+            <div class="rule"></div>
+            <span class="cnt">IsIndeterminate="False" · 受上方 Value 控制</span>
+          </div>
+
+          <div class="grid g3">
+            <div class="kindcard">
+              <div class="stage kstage" style="padding:22px 26px">
+                <div class="detbar"><i id="detBarFill"></i></div>
+                <div class="mono tiny muted" id="detBarTxt" style="margin-top:9px">62%</div>
+              </div>
+              <div class="kfoot"><b>条形</b><span class="k plain">FlowBar.Determinate</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <svg width="84" height="84" viewBox="0 0 84 84">
+                  <circle cx="42" cy="42" r="33" class="trk"/>
+                  <circle cx="42" cy="42" r="33" class="det-arc" id="detArc"/>
+                  <text x="42" y="46" text-anchor="middle" class="det-num" id="detArcTxt">62%</text>
+                </svg>
+              </div>
+              <div class="kfoot"><b>环形</b><span class="k plain">Arc.Determinate</span></div>
+            </div>
+
+            <div class="kindcard">
+              <div class="stage kstage">
+                <div class="ticks" id="detTicks"><span class="tick-num" id="detTickTxt">62%</span></div>
+              </div>
+              <div class="kfoot"><b>分段</b><span class="k plain">TickRing.Determinate</span></div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>流程步骤 · StepTracker</h2>
+            <div class="rule"></div>
+            <span class="cnt">由 CurrentIndex 推导 · 显式状态优先</span>
+          </div>
+
+          <div class="grid" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">CurrentIndex 驱动</span>
+                <span class="k" style="margin-left:auto">ProgressStep[]</span>
+              </div>
+              <div class="card-b">
+                <div class="tracker" id="tracker">
+                  <div class="tk-step" data-s="done"><span class="tk-dot"></span><span class="tk-l">初始化</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="done"><span class="tk-dot"></span><span class="tk-l">预热</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="active"><span class="tk-dot"></span><span class="tk-l">采集</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="wait"><span class="tk-dot"></span><span class="tk-l">分析</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="wait"><span class="tk-dot"></span><span class="tk-l">报告</span></div>
+                </div>
+                <div class="row" style="margin-top:18px;gap:8px">
+                  <button class="btn sm" id="tkPrev">上一步</button>
+                  <button class="btn sm" id="tkNext">下一步</button>
+                  <span class="spacer"></span>
+                  <span class="k">CurrentIndex = <b class="mono" id="tkIdx">2</b></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">显式状态覆盖</span>
+                <span class="k" style="margin-left:auto">ProgressStepState</span>
+              </div>
+              <div class="card-b">
+                <div class="tracker compact" id="trackerState">
+                  <div class="tk-step" data-s="done"><span class="tk-dot"></span><span class="tk-l">完成</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="error"><span class="tk-dot"></span><span class="tk-l">失败</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="skip"><span class="tk-dot"></span><span class="tk-l">跳过</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="active"><span class="tk-dot"></span><span class="tk-l">进行中</span></div>
+                  <div class="tk-line"><i></i></div>
+                  <div class="tk-step" data-s="wait"><span class="tk-dot"></span><span class="tk-l">等待</span></div>
+                </div>
+                <div class="hr"></div>
+                <div class="row wrap" style="gap:6px">
+                  <span class="k plain">Done</span><span class="k plain">Error</span><span class="k plain">Skipped</span>
+                  <span class="k plain">Active</span><span class="k plain">Waiting</span>
+                </div>
+                <p class="card-d" style="margin:9px 0 0">显式设了 <code>State</code> 的步骤不被 CurrentIndex 覆盖——否则「失败后重试」的流程无法如实呈现。</p>
+              </div>
+            </div>
+          </div>
+
+        </section>
+        <!-- ============ 05 通知 ============ -->
+        <section class="page" id="p-notifies">
+
+          <div class="grid" style="grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)">
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">TMessageBox · 四级</span>
+                <span class="k" style="margin-left:auto">Notifies</span>
+              </div>
+              <div class="card-b">
+                <p class="card-d" style="margin:0 0 12px">
+                  不依赖系统 <code>MessageBox</code>——外观由宿主注册的窗口决定。点一下看真实模态。
+                </p>
+                <div class="grid g2" style="gap:9px">
+                  <button class="msgbtn" data-level="Information">
+                    <span class="mi info"><svg class="icon sm"><use href="#i-bang"/></svg></span>
+                    <span class="mb-t">信息</span>
+                    <span class="mono tiny muted">Information</span>
+                  </button>
+                  <button class="msgbtn" data-level="Question">
+                    <span class="mi q"><svg class="icon sm"><use href="#i-q"/></svg></span>
+                    <span class="mb-t">询问</span>
+                    <span class="mono tiny muted">Question</span>
+                  </button>
+                  <button class="msgbtn" data-level="Warning">
+                    <span class="mi warn"><svg class="icon sm"><use href="#i-bang"/></svg></span>
+                    <span class="mb-t">警告</span>
+                    <span class="mono tiny muted">Warning</span>
+                  </button>
+                  <button class="msgbtn" data-level="Error">
+                    <span class="mi err"><svg class="icon sm"><use href="#i-x"/></svg></span>
+                    <span class="mb-t">错误</span>
+                    <span class="mono tiny muted">Error</span>
+                  </button>
+                </div>
+              </div>
+              <div class="card-f">
+                <span class="mono">ShowMsg(caption, msg, level)</span>
+                <span class="spacer"></span>
+                <span>返回 <span class="mono">TMessageBoxResult</span></span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-t">返回值</span><span class="k" style="margin-left:auto">TMessageBoxResult</span></div>
+              <div class="log" id="msgLog" style="height:170px;border:0;border-radius:0;background:transparent;flex:1">
+                <div class="ln"><span class="t">--:--:--</span><span class="m">等待调用…</span></div>
+              </div>
+              <div class="card-f"><span>OK / Cancel / Yes / No / None</span></div>
+            </div>
+
+          </div>
+
+          <div class="sec">
+            <h2>接入方式</h2>
+            <div class="rule"></div>
+            <span class="cnt">启动时注册一次</span>
+          </div>
+
+          <div class="grid g2">
+            <div class="card">
+              <div class="card-h"><span class="card-t">注册弹窗实现</span><span class="k" style="margin-left:auto">C#</span></div>
+              <div class="card-b">
+<pre class="code" style="max-height:none"><span class="c">// 构造函数签名固定为 (caption, msg, level)</span>
+TMessageBox.Init(<span class="kw">typeof</span>(<span class="ty">MyMessageDialog</span>));
+
+<span class="kw">var</span> r = TMessageBox.ShowMsg(
+    <span class="st">"开始运行"</span>,
+    <span class="st">"确认以当前参数启动采集？"</span>,
+    TMessageBox.MessageLevel.Question);
+
+<span class="kw">if</span> (r == TMessageBox.TMessageBoxResult.OK)
+    StartRun();</pre>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-t">自定义窗口</span><span class="k" style="margin-left:auto">BaseMessageDialog</span></div>
+              <div class="card-b">
+<pre class="code" style="max-height:none"><span class="c">// 外观完全由你画；关闭前把结果写回</span>
+<span class="kw">public partial class</span> <span class="ty">MyMessageDialog</span> : <span class="ty">BaseMessageDialog</span>
+{
+    <span class="kw">public</span> MyMessageDialog() : <span class="kw">base</span>() { }
+
+    <span class="kw">public</span> MyMessageDialog(
+        <span class="kw">string</span> caption, <span class="kw">string</span> msg, <span class="ty">MessageLevel</span> level)
+        : <span class="kw">base</span>(caption, msg, level) { }
+
+    <span class="kw">private void</span> OnOk(object s, RoutedEventArgs e)
+    {
+        MessageBoxResult = TMessageBoxResult.OK;
+        Close();
+    }
+}</pre>
+              </div>
+              <div class="card-f"><span>模态：<span class="mono">Owner</span> 由 <span class="mono">TMessageBox.MessageBoxOwner</span> 指定</span></div>
+            </div>
+          </div>
+
+        </section>
+        <!-- ============ 06 网络 ============ -->
+        <section class="page" id="p-net">
+
+          <div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)">
+
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0">
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">BaseRequest 子类</span>
+                  <span class="k" style="margin-left:auto">Net.Http</span>
+                </div>
+                <div class="card-b" style="padding:8px 6px 4px">
+                  <table class="tb" id="reqTable">
+                    <thead><tr><th style="width:56px">方法</th><th>BusinessUrl</th><th>ResponseType</th><th style="width:70px">选中</th></tr></thead>
+                    <tbody>
+                      <tr data-req="login" class="sel">
+                        <td><span class="k post">POST</span></td>
+                        <td class="mono tiny">/api/login</td>
+                        <td class="mono tiny">LoginResponse</td>
+                        <td><span class="radio-dot" aria-pressed="true"></span></td>
+                      </tr>
+                      <tr data-req="status">
+                        <td><span class="k get">GET</span></td>
+                        <td class="mono tiny">/api/device/status</td>
+                        <td class="mono tiny">DeviceStatusResponse</td>
+                        <td><span class="radio-dot"></span></td>
+                      </tr>
+                      <tr data-req="upload">
+                        <td><span class="k put">POST</span></td>
+                        <td class="mono tiny">/api/result/upload</td>
+                        <td class="mono tiny">UploadResponse</td>
+                        <td><span class="radio-dot"></span></td>
+                      </tr>
+                      <tr data-req="timeout">
+                        <td><span class="k get">GET</span></td>
+                        <td class="mono tiny">/api/legacy/poll</td>
+                        <td class="mono tiny">LegacyResponse</td>
+                        <td><span class="radio-dot"></span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-f">
+                  <span class="mono tiny">RootUrl + BusinessUrl</span>
+                  <span class="spacer"></span>
+                  <label class="sw"><input type="checkbox" id="netFail"><span class="sw-track"></span>模拟失败</label>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">DoWorkerAsync</span>
+                  <span class="k" style="margin-left:auto">回调回到 UI 线程</span>
+                </div>
+                <div class="card-b">
+                  <div class="row" style="gap:8px">
+                    <button class="btn primary" id="netSend">
+                      <svg class="icon sm"><use href="#i-play"/></svg>发送请求
+                    </button>
+                    <span class="spacer"></span>
+                    <span class="mono tiny" id="netElapsed">— ms</span>
+                  </div>
+
+                  <div class="stages" id="netStages" style="margin-top:14px">
+                    <div class="srow" data-s="0"><span class="srow-l">ShowProcess</span><span class="srow-bar"></span><span class="srow-ms">—</span></div>
+                    <div class="srow" data-s="1"><span class="srow-l">建连</span><span class="srow-bar"></span><span class="srow-ms">—</span></div>
+                    <div class="srow" data-s="2"><span class="srow-l">收发</span><span class="srow-bar"></span><span class="srow-ms">—</span></div>
+                    <div class="srow" data-s="3"><span class="srow-l">DeserializeObj</span><span class="srow-bar"></span><span class="srow-ms">—</span></div>
+                    <div class="srow" data-s="4"><span class="srow-l">CloseProcess</span><span class="srow-bar"></span><span class="srow-ms">—</span></div>
+                  </div>
+
+                  <div class="hr"></div>
+                  <span class="field-l">Response.Data</span>
+<pre class="code" id="netJson" style="margin-top:6px;max-height:168px">{
+  <span class="c">// 点击「发送请求」查看返回</span>
+}</pre>
+                </div>
+              </div>
+
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:13px;min-width:0">
+
+              <div class="card">
+                <div class="card-h">
+                  <span class="card-t">NetworkPing</span>
+                  <span class="k" style="margin-left:auto">Net.Pings</span>
+                </div>
+                <div class="card-b" style="display:flex;flex-direction:column;gap:9px" id="pingList">
+                  <div class="ping" data-host="192.168.1.10">
+                    <span class="ping-h mono">192.168.1.10</span>
+                    <span class="ping-bar"><i></i></span>
+                    <span class="ping-r mono">—</span>
+                  </div>
+                  <div class="ping" data-host="192.168.1.24">
+                    <span class="ping-h mono">192.168.1.24</span>
+                    <span class="ping-bar"><i></i></span>
+                    <span class="ping-r mono">—</span>
+                  </div>
+                  <div class="ping" data-host="10.0.0.7">
+                    <span class="ping-h mono">10.0.0.7</span>
+                    <span class="ping-bar"><i></i></span>
+                    <span class="ping-r mono">—</span>
+                  </div>
+                  <button class="btn sm" id="pingBtn" style="margin-top:2px">检测连通性</button>
+                </div>
+                <div class="card-f"><span>返回 <span class="mono">PingReply?</span>，null 即不可达</span></div>
+              </div>
+
+              <div class="card">
+                <div class="card-h"><span class="card-t">错误与等待界面</span></div>
+                <div class="card-b">
+                  <div class="row" style="gap:8px;margin-bottom:9px">
+                    <span class="k plain">request.Error</span>
+                    <span class="k plain">IsShowProcess</span>
+                  </div>
+                  <p class="card-d" style="margin:0">
+                    统一错误出口：网络异常、超时、反序列化失败都走同一个事件，不必在每处 <code>catch</code> 里重复弹框。
+                    <code>ShowProcess()</code> / <code>CloseProcess()</code> 可在子类里换成自绘的等待层。
+                  </p>
+                  <div class="errbox" id="netError" style="display:none">
+                    <svg class="icon sm"><use href="#i-bang"/></svg>
+                    <span class="mono tiny" id="netErrorTxt"></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-h"><span class="card-t">请求定义</span><span class="k" style="margin-left:auto">C#</span></div>
+                <div class="card-b">
+<pre class="code" style="max-height:none"><span class="kw">public sealed class</span> <span class="ty">LoginRequest</span> : <span class="ty">BaseRequest</span>
+{
+    <span class="kw">public override string</span> RootUrl
+        => <span class="st">"https://api.local"</span>;
+
+    <span class="kw">public override string</span> BusinessUrl
+        => <span class="st">"/api/login"</span>;
+
+    <span class="kw">public override</span> HttpMethodTypes Method
+        => HttpMethodTypes.POST;
+
+    <span class="kw">public override</span> Type ResponseType
+        => <span class="kw">typeof</span>(<span class="ty">LoginResponse</span>);
+
+    <span class="kw">public override void</span> SerializeObject()
+        => Data = JsonSerializer.Serialize(
+            <span class="kw">new</span> { User, Password });
+}</pre>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+        <!-- ============ 07 系统与工具 ============ -->
+        <section class="page" id="p-system">
+
+          <div class="grid g2">
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">SystemHelper</span>
+                <button class="btn ghost sm" id="sysRefresh" style="margin-left:auto">
+                  <svg class="icon sm"><use href="#i-loader"/></svg>重新 Init()
+                </button>
+              </div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:0">
+                <div class="kv"><span class="kv-k">ComputerName</span><span class="kv-v mono" id="vName">WS-QC-014</span><button class="btn ghost sm" data-copy="vName">复制</button></div>
+                <div class="kv"><span class="kv-k">HardDiskID</span><span class="kv-v mono" id="vDisk">WD-WCC4N2PK8412</span><button class="btn ghost sm" data-copy="vDisk">复制</button></div>
+                <div class="kv"><span class="kv-k">ServerId</span><span class="kv-v mono" id="vBoard">8F3A-2C71-9D04-B6E5</span><button class="btn ghost sm" data-copy="vBoard">复制</button></div>
+                <div class="kv" style="border-bottom:0"><span class="kv-k">授权指纹 · MD5</span><span class="kv-v mono" id="vFp" style="color:var(--accent)">—</span><button class="btn ghost sm" data-copy="vFp">复制</button></div>
+              </div>
+              <div class="card-f">
+                <span class="k plain">Init()</span>
+                <span class="spacer"></span>
+                <span>授权绑定的常用三件套</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">DateTimeHelper</span>
+                <span class="k" style="margin-left:auto">Time</span>
+              </div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:10px">
+                <div class="kv" style="border-bottom:0;padding-bottom:0">
+                  <span class="kv-k">GetUnixTime()</span>
+                  <span class="kv-v mono" id="vNow" style="color:var(--accent);font-weight:600">—</span>
+                  <span class="tiny muted" id="vNowDate">—</span>
+                </div>
+                <div class="field">
+                  <span class="field-l">UnixTimestampToDateTimeNoTimeZone(long)</span>
+                  <div class="row" style="gap:6px">
+                    <input class="in sm mono" id="tsIn" value="1763000000" />
+                    <button class="btn sm" id="tsBtn" style="flex:0 0 auto">转换</button>
+                  </div>
+                  <div class="mono tiny" id="tsOut" style="color:var(--ink-2);margin-top:2px">—</div>
+                </div>
+                <div class="field">
+                  <span class="field-l">DateTimeToUnixTimestampNoTimeZone(DateTime)</span>
+                  <input class="in sm mono" id="dtIn" value="2026-11-13 22:14:00" />
+                  <div class="mono tiny" id="dtOut" style="color:var(--ink-2)">—</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">ImageHelper</span>
+                <span class="k" style="margin-left:auto">Images</span>
+              </div>
+              <div class="card-b row" style="gap:13px">
+                <div class="thumb">
+                  <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">
+                    <rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.4" cy="9.6" r="1.6"/>
+                    <path d="M3.6 16.4 9.2 11l4.4 4.2 3-2.6 4 4.4"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="mono tiny" style="color:var(--ink-2)">ImageHelper.Load(path)</div>
+                  <p class="card-d" style="margin:3px 0 0">位图加载扩展：不锁文件句柄，可反复覆盖同一路径的文件。</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">AnimationHelper · Kernel32</span>
+                <span class="k" style="margin-left:auto">Animations · WinApis</span>
+              </div>
+              <div class="card-b">
+                <p class="card-d" style="margin:0 0 9px">
+                  <code>AnimationHelper</code> 提供附加属性式的动画辅助；<code>Kernel32.CopyMemory</code> 用于与设备 SDK 的非托管缓冲区对接。
+                </p>
+                <div class="row wrap" style="gap:6px">
+                  <span class="k plain">CopyMemory</span>
+                  <span class="k plain">SetAnim</span>
+                  <span class="k plain">Pointer → byte[]</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="sec">
+            <h2>工具模块清单</h2>
+            <div class="rule"></div>
+            <span class="cnt">按命名空间取用，互不牵连</span>
+          </div>
+
+          <div class="card">
+            <div class="card-b" style="padding:0">
+              <table class="tb">
+                <thead><tr><th style="width:180px">命名空间</th><th style="width:200px">类型</th><th>用途</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono tiny">YoYo.Toolkit.System</td><td class="nm">SystemHelper</td><td class="tiny">硬盘序列号、主板 ID、机器名，静态读取</td></tr>
+                  <tr><td class="mono tiny">YoYo.Toolkit.Time</td><td class="nm">DateTimeHelper</td><td class="tiny">Unix 时间戳与本地时间互转（不带时区）</td></tr>
+                  <tr><td class="mono tiny">YoYo.Toolkit.Images</td><td class="nm">ImageHelper</td><td class="tiny">位图加载，释放文件占用</td></tr>
+                  <tr><td class="mono tiny">YoYo.Toolkit.Converters</td><td class="nm">Bool / Null / Percent</td><td class="tiny">绑定转换，含百分比 → 弧线几何</td></tr>
+                  <tr><td class="mono tiny">YoYo.Toolkit.WinApis</td><td class="nm">Kernel32</td><td class="tiny">CopyMemory 等 kernel32 互操作</td></tr>
+                  <tr><td class="mono tiny">YoYo.Toolkit.Animations</td><td class="nm">AnimationHelper</td><td class="tiny">附加属性式动画起点</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </section>
+        <!-- ============ 08 加密 ============ -->
+        <section class="page" id="p-crypto">
+
+          <div class="note">
+            <svg class="icon sm" style="color:var(--warn)"><use href="#i-bang"/></svg>
+            <span>本页加解密结果在浏览器内计算，仅用于演示界面；生产环境的密钥管理、IV 与填充模式请按 <code>RSAHelper</code> 的说明自行确认。</span>
+          </div>
+
+          <div class="grid g2" style="margin-top:13px">
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">MD5Helper</span>
+                <span class="k" style="margin-left:auto">CryptoServices</span>
+              </div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:10px">
+                <div class="field">
+                  <span class="field-l">明文</span>
+                  <input class="in" id="md5In" value="YoYo.Toolkit" />
+                </div>
+                <div class="field">
+                  <div class="row">
+                    <span class="field-l">Md5(strText, length, isUpper)</span>
+                    <span class="spacer"></span>
+                    <label class="sw"><input type="checkbox" id="md5Upper"><span class="sw-track"></span>大写</label>
+                    <label class="sw"><input type="checkbox" id="md5Short"><span class="sw-track"></span>16 位</label>
+                  </div>
+                  <div class="outbox">
+                    <span class="mono" id="md5Out">—</span>
+                    <button class="btn ghost sm" data-copy="md5Out" style="flex:0 0 auto">复制</button>
+                  </div>
+                </div>
+                <div class="hr"></div>
+                <div class="row wrap" style="gap:6px">
+                  <span class="k plain">Md5</span>
+                  <span class="k plain">Md5ToByte</span>
+                  <span class="k plain">CalculateMD5Hash(filePath)</span>
+                </div>
+                <p class="card-d" style="margin:0">文件摘要走 <code>CalculateMD5Hash</code>，大文件分块读取，不整块进内存。</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <span class="card-t">RSAHelper · AES</span>
+                <span class="k" style="margin-left:auto">CryptoServices</span>
+              </div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:9px">
+                <div class="field">
+                  <span class="field-l">明文</span>
+                  <input class="in" id="aesIn" value="SN-0001|2026-11-13" />
+                </div>
+                <div class="field">
+                  <span class="field-l">key</span>
+                  <input class="in mono" id="aesKey" value="yoyo-toolkit-key" />
+                </div>
+                <div class="row" style="gap:7px">
+                  <button class="btn primary sm" id="aesEnc">AESEncrypt</button>
+                  <button class="btn sm" id="aesDec">AESDecrypt</button>
+                  <span class="spacer"></span>
+                  <span class="mono tiny muted" id="aesState">—</span>
+                </div>
+                <div class="outbox" style="min-height:56px;align-items:flex-start">
+                  <span class="mono" id="aesOut" style="word-break:break-all">—</span>
+                </div>
+              </div>
+              <div class="card-f"><span>EncryptKey / SetIV(byte[])</span><span class="spacer"></span><span>Base64 输出</span></div>
+            </div>
+
+          </div>
+
+          <div class="sec">
+            <h2>用于授权绑定</h2>
+            <div class="rule"></div>
+            <span class="cnt">常见组合：机器指纹 → 摘要 → 许可串</span>
+          </div>
+
+          <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+            <div class="card">
+              <div class="card-b">
+<pre class="code" style="max-height:none">SystemHelper.Init();
+
+<span class="c">// 机器指纹：不落盘、不外传</span>
+<span class="kw">var</span> fingerprint = MD5Helper.Md5(
+    SystemHelper.HardDiskID +
+    SystemHelper.ServerId);
+
+<span class="c">// 许可串：AES 包一层加密</span>
+<span class="kw">var</span> license = RSAHelper.AESEncrypt(
+    <span class="st">$"{fingerprint}|2027-12-31"</span>,
+    appKey);</pre>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><span class="card-t">四项注意</span></div>
+              <div class="card-b" style="display:flex;flex-direction:column;gap:9px">
+                <div class="warn-item"><b>密钥不要硬编码在客户端</b><p>至少做一次运行时派生，或由服务端下发短效密钥。</p></div>
+                <div class="warn-item"><b>IV 必须随机</b><p><code>SetIV</code> 传入固定 IV 等于退化为 ECB。</p></div>
+                <div class="warn-item"><b>MD5 只做校验</b><p>摘要不等于加密，口令存储请用带盐的慢哈希。</p></div>
+                <div class="warn-item"><b>指纹可伪造</b><p>硬件 ID 能改，授权方案需配合服务端校验。</p></div>
+              </div>
+            </div>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- ================= 状态栏 ================= -->
+      <footer class="statusbar">
+        <div class="sb-item"><span class="dot-live"></span><span>MainNavigation</span></div>
+        <div class="sb-item"><span id="sbCount">8</span><span>NavigateModel</span></div>
+        <div class="sb-log"><span class="lv" id="sbLogTime">--:--:--</span><span id="sbLog">就绪</span></div>
+        <div class="sb-item"><span id="sbTheme">浅色令牌</span></div>
+        <div class="sb-item"><span>net8.0-windows</span></div>
+        <div class="sb-item"><span>AnyCPU</span></div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- 模态层（TMessageBox 演示） -->
+  <div id="scrim" style="display:none"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   页面元数据 —— 与 NavigateModel 一一对应
+   ============================================================ */
+var PAGES = {
+  overview:   { view:"OverviewView",   title:"概览",       lede:"八个模块、一个导航容器：示例程序的结构说明。", vm:"OverviewViewModel" },
+  navigation: { view:"NavigationView", title:"导航与窗口", lede:"BaseNavigation 的生命周期、强类型参数与 WindowService 多窗口。", vm:"NavigationViewModel" },
+  controls:   { view:"ControlsView",   title:"控件",       lede:"水印输入框、树形下拉、图标选项、描边文字与圆环。", vm:"ControlsViewModel" },
+  progress:   { view:"ProgressView",   title:"进度",       lede:"20 种不确定动效、三套确定态与流程步骤条；换肤只换令牌。", vm:"ProgressViewModel" },
+  notifies:   { view:"NotifiesView",   title:"通知",       lede:"TMessageBox：四级消息框，外观完全由宿主决定。", vm:"NotifiesViewModel" },
+  net:        { view:"NetView",        title:"网络",       lede:"请求/响应基类、异步回调、统一错误出口与连通性检测。", vm:"NetViewModel" },
+  system:     { view:"SystemView",     title:"系统与工具", lede:"机器指纹、Unix 时间戳、位图加载与值转换器。", vm:"SystemViewModel" },
+  crypto:     { view:"CryptoView",     title:"加密",       lede:"MD5 摘要与 AES 加解密，用于授权绑定与敏感字段。", vm:"CryptoViewModel" }
+};
+
+var NAV = [
+  { group:"开始",     items:[ { id:"overview",   label:"概览",       icon:"i-home" } ] },
+  { group:"架构",     items:[ { id:"navigation", label:"导航与窗口", icon:"i-route" } ] },
+  { group:"组件",     items:[ { id:"controls",   label:"控件",       icon:"i-sliders" },
+                              { id:"progress",   label:"进度",       icon:"i-loader" },
+                              { id:"notifies",   label:"通知",       icon:"i-msg" } ] },
+  { group:"基础设施", items:[ { id:"net",        label:"网络",       icon:"i-net" },
+                              { id:"system",     label:"系统与工具", icon:"i-cpu" },
+                              { id:"crypto",     label:"加密",       icon:"i-lock" } ] }
+];
+
+var $  = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+function stamp() {
+  var d = new Date();
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+}
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+/* ============================================================
+   日志 / 状态栏
+   ============================================================ */
+function logLine(msg, level) {
+  var now = stamp();
+  var sbT = $("#sbLogTime"), sbM = $("#sbLog");
+  if (sbT) sbT.textContent = now;
+  if (sbM) { sbM.textContent = msg; sbM.style.color = level === "err" ? "var(--err)" : level === "warn" ? "var(--warn)" : level === "ok" ? "var(--ok)" : ""; }
+
+  var box = $("#navLog");
+  if (!box) return;
+  var ln = document.createElement("div");
+  ln.className = "ln";
+  var t = document.createElement("span"); t.className = "t"; t.textContent = now;
+  var m = document.createElement("span"); m.className = "m" + (level ? " " + level : "");
+  m.textContent = msg;
+  ln.appendChild(t); ln.appendChild(m);
+  box.appendChild(ln);
+  while (box.children.length > 60) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+function logMsg(boxSel, msg, level) {
+  var box = $(boxSel);
+  if (!box) return;
+  var ln = document.createElement("div");
+  ln.className = "ln";
+  var t = document.createElement("span"); t.className = "t"; t.textContent = stamp();
+  var m = document.createElement("span"); m.className = "m" + (level ? " " + level : "");
+  m.textContent = msg;
+  ln.appendChild(t); ln.appendChild(m);
+  box.appendChild(ln);
+  box.scrollTop = box.scrollHeight;
+}
+
+/* ============================================================
+   导航
+   ============================================================ */
+function renderNav() {
+  var root = $("#navRoot");
+  if (!root) return;
+  var html = "";
+  NAV.forEach(function (g) {
+    html += '<div class="nav-group"><div class="nav-label">' + g.group + "</div>";
+    g.items.forEach(function (it) {
+      html += '<button class="nav-item" data-go="' + it.id + '" data-label="' + it.label + '" title="' + it.label + '">' +
+              '<svg class="ic icon"><use href="#' + it.icon + '"/></svg>' +
+              '<span class="nm">' + it.label + "</span>" +
+              '<span class="vt">' + PAGES[it.id].view + "</span></button>";
+    });
+    html += "</div>";
+  });
+  root.innerHTML = html;
+}
+
+var current = "overview";
+
+function go(id, silent) {
+  if (!PAGES[id]) return;
+  current = id;
+
+  $$(".page").forEach(function (p) { p.classList.remove("on"); });
+  var page = $("#p-" + id);
+  if (page) {
+    page.classList.add("on");
+    $("#content").scrollTop = 0;
+  }
+
+  $$(".nav-item").forEach(function (b) {
+    if (b.getAttribute("data-go") === id) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+
+  var meta = PAGES[id];
+  $("#phKey").textContent = meta.view;
+  $("#phTitle").textContent = meta.title;
+  $("#phLede").textContent = meta.lede;
+
+  if (!silent) logLine("导航到页面 " + meta.view, "ac");
+  if (id === "progress") updateProgressUI();
+  if (id === "net" && !netPinged) setTimeout(function () { if (!netPinged) doPing(); }, 340);
+  try { history.replaceState(null, "", "#" + id); } catch (err) { /* file:// 下忽略 */ }
+}
+
+/* 侧栏 / 卡片 / 表格行统一委托 */
+document.addEventListener("click", function (e) {
+  var t = e.target.closest("[data-go]");
+  if (t) { go(t.getAttribute("data-go")); return; }
+  var row = e.target.closest("[data-jump]");
+  if (row) { go(row.getAttribute("data-jump")); }
+});
+
+/* 筛选 */
+function bindFilter(inputSel) {
+  var inp = $(inputSel);
+  if (!inp) return;
+  inp.addEventListener("input", function () {
+    var q = inp.value.trim().toLowerCase();
+    $$(".nav-item").forEach(function (b) {
+      var hay = (b.getAttribute("data-label") + " " + b.getAttribute("data-go") + " " + PAGES[b.getAttribute("data-go")].view).toLowerCase();
+      b.style.display = (!q || hay.indexOf(q) >= 0) ? "" : "none";
+    });
+    $$(".nav-group").forEach(function (g) {
+      var any = $$(".nav-item", g).some(function (b) { return b.style.display !== "none"; });
+      g.style.display = any ? "" : "none";
+    });
+  });
+}
+
+/* 折叠侧栏 */
+function bindRail() {
+  var btn = $("#railBtn");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    document.body.classList.toggle("rail");
+    btn.title = document.body.classList.contains("rail") ? "展开导航" : "折叠导航";
+  });
+}
+
+/* 主题 */
+function setTheme(mode) {
+  document.documentElement.setAttribute("data-theme", mode);
+  $$("[data-theme-btn]").forEach(function (b) {
+    b.setAttribute("aria-pressed", b.getAttribute("data-theme-btn") === mode ? "true" : "false");
+  });
+  var sb = $("#sbTheme");
+  if (sb) sb.textContent = mode === "dark" ? "深色令牌" : "浅色令牌";
+  logLine("切换令牌字典：" + (mode === "dark" ? "Progress.Tokens.Dark.xaml" : "Progress.Tokens.Light.xaml"), "warn");
+}
+function bindTheme() {
+  $$("[data-theme-btn]").forEach(function (b) {
+    b.addEventListener("click", function () { setTheme(b.getAttribute("data-theme-btn")); });
+  });
+}
+
+/* ============================================================
+   02 导航页：时序播放
+   ============================================================ */
+var playing = false;
+
+function setMount(view, param, vm) {
+  var a = $("#mountView"), b = $("#mountParam"), c = $("#mountVm");
+  if (a) a.textContent = view;
+  if (b) b.textContent = param || "null";
+  if (c) c.textContent = vm || "—";
+}
+
+function resetTl() {
+  $$("#tl .tl-node").forEach(function (n) { n.classList.remove("on"); });
+  $$("#tl .tl-link").forEach(function (n) { n.classList.remove("on"); });
+}
+
+async function playGo(view, param) {
+  if (playing) return;
+  playing = true;
+  resetTl();
+  setMount("—", "—", "—");
+
+  var vm = view === "DeviceView" ? "DeviceViewModel" : (view === "OverviewView" ? "OverviewViewModel" : "ViewModel");
+  logLine('GoTo("' + view + '"' + (param ? ', "' + param + '"' : "") + ")", "ac");
+
+  var seq = [
+    { i:0, text:"NavigateOut() · 旧视图释放轮询与订阅", lv:"warn" },
+    { i:1, text:"NavigateIn<" + (param ? "string" : "object") + ">(" + (param ? '"' + param + '"' : "null") + ") · 新 VM 收参", lv:"ok" },
+    { i:2, text:"GetService(" + view + ") · 解析视图实例", lv:"" },
+    { i:3, text:"SetView() · 挂载完成", lv:"ok" }
+  ];
+
+  for (var k = 0; k < seq.length; k++) {
+    var s = seq[k];
+    var node = $('#tl .tl-node[data-i="' + s.i + '"]');
+    if (node) node.classList.add("on");
+    if (s.i > 0) {
+      var link = $('#tl .tl-link[data-i="' + (s.i - 1) + '"]');
+      if (link) link.classList.add("on");
+    }
+    logLine(s.text, s.lv);
+    if (s.i === 1) setMount(view, param, vm);
+    await sleep(430);
+  }
+  playing = false;
+}
+
+function bindNavPage() {
+  $$("[data-goto]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      playGo(b.getAttribute("data-goto"), b.getAttribute("data-param"));
+    });
+  });
+  var clr = $("#clearLog");
+  if (clr) clr.addEventListener("click", function () {
+    var box = $("#navLog"); if (box) box.innerHTML = "";
+  });
+  $$("[data-close-win]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var row = b.closest(".winrow");
+      if (!row) return;
+      row.classList.add("closed");
+      var s = $(".winrow-s", row);
+      if (s) { s.textContent = "已关闭"; s.classList.remove("on"); s.classList.add("off"); }
+      b.disabled = true;
+      logLine('WindowService.CloseWindow("' + b.getAttribute("data-close-win") + '") · Dispatcher 回主线程', "warn");
+    });
+  });
+}
+
+/* ============================================================
+   03 控件页
+   ============================================================ */
+function bindControls() {
+  /* 树形下拉 */
+  var tc = $("#treeCombo");
+  if (tc) {
+    var field = $("#tcField");
+    field.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var willOpen = !tc.classList.contains("open");
+      if (willOpen && !$("#tcDrop").checked) {
+        logLine("IsDorpDown = False · 下拉被禁用", "warn");
+        return;
+      }
+      tc.classList.toggle("open", willOpen);
+      field.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+    $$(".tc-root", tc).forEach(function (r) {
+      r.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var g = r.closest(".tc-group");
+        g.setAttribute("data-open", g.getAttribute("data-open") === "true" ? "false" : "true");
+      });
+    });
+    $$(".leaf", tc).forEach(function (leaf) {
+      leaf.addEventListener("click", function (e) {
+        e.stopPropagation();
+        $$(".leaf", tc).forEach(function (l) { l.classList.remove("sel"); });
+        leaf.classList.add("sel");
+        var v = leaf.getAttribute("data-val");
+        var txt = $("#tcText");
+        txt.textContent = v;
+        txt.classList.remove("muted");
+        tc.classList.remove("open");
+        $("#tcCmd").textContent = "SelectCommand: " + v;
+        logLine("TreeComboBox.SelectCommand 执行 · node = " + v, "ac");
+      });
+    });
+    document.addEventListener("click", function () { tc.classList.remove("open"); });
+
+    var leafOnly = $("#tcLeaf");
+    leafOnly.addEventListener("change", function () {
+      $$(".tc-row", tc).forEach(function (r) {
+        if (!r.classList.contains("leaf")) return;
+        r.classList.toggle("dim", !leafOnly.checked);
+      });
+    });
+  }
+
+  /* 图标选项 */
+  var ir = $("#irGroup");
+  if (ir) {
+    $$(".irbtn", ir).forEach(function (b) {
+      b.addEventListener("click", function () {
+        $$(".irbtn", ir).forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        ir.setAttribute("data-value", b.getAttribute("data-val"));
+        $("#irOut").textContent = 'GroupName = "Mode" · 选中 ' + b.getAttribute("data-val");
+        logLine('IconRadioButton 选中：' + b.getAttribute("data-val"), "");
+      });
+    });
+    $$(".swatchdot", $("#irColors")).forEach(function (d) {
+      d.addEventListener("click", function () {
+        $$(".swatchdot").forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+        d.setAttribute("aria-pressed", "true");
+        ir.style.setProperty("--ir-color", d.getAttribute("data-color"));
+        $$(".irbtn .icon", ir).forEach(function (i) { i.style.stroke = d.getAttribute("data-color"); });
+      });
+    });
+  }
+
+  /* 描边文字 */
+  $$("#strokeSeg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      $$("#strokeSeg button").forEach(function (x) { x.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      var t = $("#outlineTxt");
+      t.className = "outline-txt " + b.getAttribute("data-stroke") + "stroke";
+    });
+  });
+
+  /* 圆环 */
+  var ring = $("#ringActive");
+  if (ring) ring.addEventListener("change", function () {
+    $$(".ring circle").forEach(function (c) { c.style.animationPlayState = ring.checked ? "running" : "paused"; });
+  });
+
+  /* 密码 / 软键盘 */
+  var eye = $("#pwdEye");
+  if (eye) eye.addEventListener("click", function () {
+    var i = $("#pwdInput");
+    var show = i.type === "password";
+    i.type = show ? "text" : "password";
+    eye.textContent = show ? "隐藏" : "显示";
+  });
+  var oskBtn = $("#oskBtn");
+  if (oskBtn) oskBtn.addEventListener("click", function () { $("#osk").classList.toggle("on"); });
+
+  /* 转换器 */
+  var cvBool = $("#cvBool");
+  if (cvBool) cvBool.addEventListener("change", function () {
+    $("#cvBoolBox").classList.toggle("off", !cvBool.checked);
+  });
+  var cvRev = $("#cvRev");
+  if (cvRev) cvRev.addEventListener("change", function () {
+    $("#cvRevBox").classList.toggle("off", cvRev.checked);
+  });
+  var cvNull = $("#cvNull");
+  if (cvNull) cvNull.addEventListener("input", function () {
+    $("#cvNullBox").classList.toggle("off", cvNull.value.length === 0);
+    $("#cvNullBox").textContent = cvNull.value.length ? "非空" : "null";
+  });
+  var cvRange = $("#cvRange");
+  if (cvRange) cvRange.addEventListener("input", function () {
+    $("#cvRangeOut").textContent = Number(cvRange.value).toFixed(1) + "%";
+  });
+}
+
+/* ============================================================
+   04 进度页
+   ============================================================ */
+var progState = "running";
+
+function buildProgressDots() {
+  var m = $("#matrixDots");
+  if (m) {
+    var h = "";
+    for (var i = 0; i < 9; i++) {
+      h += '<i style="animation-delay:' + (i * 0.11).toFixed(2) + 's"></i>';
+    }
+    m.innerHTML = h;
+  }
+  var w = $("#waveBars");
+  if (w) {
+    var s = "";
+    for (var j = 0; j < 18; j++) {
+      var d = (Math.sin(j * 0.7) * 0.35 + 0.5).toFixed(2);
+      s += '<i style="animation-delay:' + d + 's"></i>';
+    }
+    w.innerHTML = s;
+  }
+  var t = $("#detTicks");
+  if (t) {
+    var html = "";
+    var n = 28;
+    for (var k = 0; k < n; k++) {
+      html += '<span class="tick" style="transform:rotate(' + (k * (360 / n)).toFixed(2) + 'deg)"></span>';
+    }
+    html += '<span class="tick-num" id="detTickTxt">62%</span>';
+    t.innerHTML = html;
+  }
+}
+
+function updateProgressUI() {
+  var v = $("#progValue");
+  if (!v) return;
+  var pct = Number(v.value);
+  $("#progValueOut").textContent = pct;
+  $("#detBarTxt").textContent = pct + "%";
+
+  var fill = $("#detBarFill");
+  if (fill) fill.style.width = pct + "%";
+
+  var C = 2 * Math.PI * 33;
+  var arc = $("#detArc");
+  if (arc) arc.setAttribute("stroke-dasharray", (pct / 100 * C).toFixed(2) + " " + C.toFixed(2));
+  var at = $("#detArcTxt");
+  if (at) at.textContent = pct + "%";
+
+  var ticks = $$("#detTicks .tick");
+  var lit = Math.round(pct / 100 * ticks.length);
+  ticks.forEach(function (t, i) { t.classList.toggle("lit", i < lit); });
+  var tt = $("#detTickTxt");
+  if (tt) tt.textContent = pct + "%";
+}
+
+function setProgState(s) {
+  progState = s;
+  var page = $("#p-progress");
+  if (!page) return;
+  page.classList.remove("p-success", "p-error", "reduced");
+  document.body.classList.remove("reduced");
+
+  $$("#progState button").forEach(function (b) {
+    b.setAttribute("aria-pressed", b.getAttribute("data-state") === s ? "true" : "false");
+  });
+
+  if (s === "reduced") { document.body.classList.add("reduced"); logLine("Motion = Reduced · 走 RunningReduced 分支", "warn"); }
+  if (s === "success") { page.classList.add("p-success"); logLine("State = Success · 收尾态显示勾", "ok"); }
+  if (s === "error") { page.classList.add("p-error"); logLine("State = Error · 收尾态显示叉", "err"); }
+  if (s === "running") logLine("State = Running", "");
+
+  var chip = $("#progStateChip");
+  if (chip) {
+    var label = { running:"Running", reduced:"RunningReduced", success:"Success", error:"Error" }[s];
+    chip.textContent = "State = " + label;
+    chip.className = "k " + (s === "success" ? "" : s === "error" ? "" : "accent");
+    chip.style.color = s === "success" ? "var(--ok)" : s === "error" ? "var(--err)" : "";
+    chip.style.borderColor = s === "success" ? "var(--ok)" : s === "error" ? "var(--err)" : "";
+  }
+}
+
+function bindProgress() {
+  var v = $("#progValue");
+  if (v) v.addEventListener("input", updateProgressUI);
+
+  var pause = $("#progPause");
+  if (pause) pause.addEventListener("click", function () {
+    var on = document.body.classList.toggle("paused");
+    pause.innerHTML = on
+      ? '<svg class="icon sm"><use href="#i-play"/></svg><span>继续动画</span>'
+      : '<svg class="icon sm"><use href="#i-pause"/></svg><span>暂停动画</span>';
+    logLine(on ? "IsActive = False · 故事板全部停止" : "IsActive = True · 动画恢复", on ? "warn" : "ok");
+  });
+
+  $$("#progState button").forEach(function (b) {
+    b.addEventListener("click", function () { setProgState(b.getAttribute("data-state")); });
+  });
+
+  /* 步骤条 */
+  var idx = 2;
+  var total = 5;
+  function paint() {
+    var steps = $$("#tracker .tk-step");
+    steps.forEach(function (s, i) {
+      s.setAttribute("data-s", i < idx ? "done" : (i === idx ? "active" : "wait"));
+    });
+    $$("#tracker .tk-line").forEach(function (l, i) { l.classList.toggle("on", i < idx); });
+    $("#tkIdx").textContent = idx;
+  }
+  $("#tkPrev").addEventListener("click", function () { idx = Math.max(0, idx - 1); paint(); });
+  $("#tkNext").addEventListener("click", function () { idx = Math.min(total - 1, idx + 1); paint(); });
+  paint();
+}
+
+/* ============================================================
+   05 通知
+   ============================================================ */
+var DIALOGS = {
+  Information: { title:"提示", msg:"采集已完成，结果已保存至本地数据库。", cls:"info", icon:"i-bang", ok:"确定", cancel:null },
+  Question:    { title:"开始运行", msg:"确认以当前参数启动采集？运行期间请勿拔除设备。", cls:"q", icon:"i-q", ok:"开始", cancel:"取消" },
+  Warning:     { title:"样本不足", msg:"当前批次剩余试剂 3 份，不足以完成全部样本检测。", cls:"warn", icon:"i-bang", ok:"继续", cancel:"返回" },
+  Error:       { title:"设备通信失败", msg:"无法连接 COM3，请检查串口占用或线缆连接。错误码 0x8007。", cls:"err", icon:"i-x", ok:"确定", cancel:null }
+};
+
+function closeDialog() {
+  var s = $("#scrim");
+  if (s) { s.style.display = "none"; s.innerHTML = ""; }
+}
+
+function showDialog(level) {
+  var d = DIALOGS[level];
+  if (!d) return;
+  var scrim = $("#scrim");
+  scrim.innerHTML =
+    '<div class="dialog" role="dialog" aria-modal="true">' +
+      '<div class="dialog-h">' +
+        '<span class="dialog-icon mi ' + d.cls + '"><svg class="icon sm"><use href="#' + d.icon + '"/></svg></span>' +
+        '<div><div class="dialog-t">' + d.title + "</div></div>" +
+      "</div>" +
+      '<div class="dialog-m">' + d.msg + "</div>" +
+      '<div class="dialog-f">' +
+        (d.cancel ? '<button class="btn" data-res="Cancel">' + d.cancel + "</button>" : "") +
+        '<button class="btn primary" data-res="OK">' + d.ok + "</button>" +
+      "</div>" +
+    "</div>";
+  scrim.style.display = "flex";
+
+  $$("[data-res]", scrim).forEach(function (b) {
+    b.addEventListener("click", function () {
+      var r = b.getAttribute("data-res");
+      closeDialog();
+      logMsg("#msgLog", "ShowMsg → " + r + "  (" + level + ")", r === "OK" ? "ok" : "warn");
+      logLine("TMessageBox.ShowMsg 返回 " + r, r === "OK" ? "ok" : "warn");
+    });
+  });
+}
+
+function bindNotifies() {
+  $$(".msgbtn").forEach(function (b) {
+    b.addEventListener("click", function () { showDialog(b.getAttribute("data-level")); });
+  });
+  var scrim = $("#scrim");
+  if (scrim) scrim.addEventListener("click", function (e) {
+    if (e.target === scrim) { closeDialog(); logMsg("#msgLog", "点击遮罩 → None", "warn"); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDialog();
+  });
+}
+
+/* ============================================================
+   06 网络
+   ============================================================ */
+var REQ_DATA = {
+  login: { url:"/api/login", ms:[30, 60, 110, 25, 15],
+    body:'{\n  "code": 0,\n  "msg": "ok",\n  "token": "eyJhbGciOiJIUzI1NiJ9.…"\n}',
+    fail:'{ "code": 401, "msg": "invalid credentials" }' },
+  status: { url:"/api/device/status", ms:[20, 40, 80, 18, 12],
+    body:'{\n  "code": 0,\n  "state": "Running",\n  "temperature": 63.4,\n  "cycles": 42\n}',
+    fail:'{ "code": 500, "msg": "device not responding" }' },
+  upload: { url:"/api/result/upload", ms:[25, 55, 240, 30, 14],
+    body:'{\n  "code": 0,\n  "fileId": "R-2026111300042",\n  "size": 184320\n}',
+    fail:'{ "code": 413, "msg": "payload too large" }' },
+  timeout: { url:"/api/legacy/poll", ms:[22, 900, 0, 0, 12],
+    body:'{ "code": 0 }',
+    fail:'TimeoutException: The request timed out after 3000ms' }
+};
+
+var curReq = "login";
+var netBusy = false;
+
+function bindNet() {
+  $$("#reqTable tbody tr").forEach(function (tr) {
+    tr.addEventListener("click", function () {
+      $$("#reqTable tbody tr").forEach(function (x) {
+        x.classList.remove("sel");
+        var d = $(".radio-dot", x); if (d) d.setAttribute("aria-pressed", "false");
+      });
+      tr.classList.add("sel");
+      var d = $(".radio-dot", tr); if (d) d.setAttribute("aria-pressed", "true");
+      curReq = tr.getAttribute("data-req");
+      logLine("选中请求 " + REQ_DATA[curReq].url, "");
+    });
+  });
+
+  var send = $("#netSend");
+  if (send) send.addEventListener("click", runRequest);
+
+  var ping = $("#pingBtn");
+  if (ping) ping.addEventListener("click", doPing);
+  var netPage = $("#p-net");
+  if (netPage) {
+    $$(".ping").forEach(function (p, i) {
+      var r = $(".ping-r", p);
+      if (r) r.textContent = "—";
+    });
+  }
+}
+
+var netPinged = false;
+
+function doPing() {
+  $$(".ping").forEach(function (p, i) {
+    var base = [12, 34, 8][i];
+    var bad = i === 2;
+    setTimeout(function () {
+      var bar = $(".ping-bar i", p), r = $(".ping-r", p);
+      if (bad) {
+        p.classList.add("bad");
+        bar.style.width = "100%";
+        r.textContent = "超时";
+      } else {
+        p.classList.remove("bad");
+        var ms = base + Math.round(Math.random() * 18);
+        bar.style.width = Math.min(100, 18 + ms * 1.7) + "%";
+        r.textContent = ms + " ms";
+      }
+    }, 260 * i + 120);
+  });
+  logLine("NetworkPing.PingHost × 3", "");
+  netPinged = true;
+}
+
+async function runRequest() {
+  if (netBusy) return;
+  netBusy = true;
+  var d = REQ_DATA[curReq];
+  var fail = $("#netFail").checked;
+  var st = $$("#netStages .srow");
+  st.forEach(function (s) { s.classList.remove("run", "done", "err"); });
+  $("#netError").style.display = "none";
+  $("#netJson").textContent = "…";
+  $("#netElapsed").textContent = "— ms";
+  $("#netSend").disabled = true;
+
+  var total = 0;
+  for (var i = 0; i < st.length; i++) {
+    var ms = fail && i === 2 ? 120 : d.ms[i];
+    st[i].classList.add("run");
+    await sleep(Math.max(120, Math.min(ms, 260)));
+    st[i].classList.remove("run");
+    st[i].classList.add(fail && i >= 2 ? "err" : "done");
+    total += ms;
+    var mEl = $(".srow-ms", st[i]);
+    if (mEl) mEl.textContent = ms + " ms";
+    if (fail && i === 2) break;
+  }
+
+  if (fail) {
+    $("#netElapsed").textContent = total + " ms";
+    $("#netJson").textContent = d.fail;
+    var eb = $("#netError");
+    eb.style.display = "flex";
+    $("#netErrorTxt").textContent = "request.Error · " + (curReq === "timeout" ? "TimeoutException" : "HTTP 500") + " → 统一错误出口";
+    logLine("request.Error · " + (curReq === "timeout" ? "TimeoutException" : "HTTP 500"), "err");
+  } else {
+    $("#netElapsed").textContent = total + " ms";
+    $("#netJson").textContent = d.body;
+    logLine("DoServiceAsyncCompleted · " + d.url + " · " + total + " ms", "ok");
+  }
+
+  $("#netSend").disabled = false;
+  netBusy = false;
+}
+
+/* ============================================================
+   07 系统
+   ============================================================ */
+function bindSystem() {
+  function tickNow() {
+    var el = $("#vNow"), dt = $("#vNowDate");
+    if (!el) return;
+    var now = Date.now();
+    el.textContent = Math.floor(now / 1000);
+    if (dt) dt.textContent = new Date(now).toLocaleString("zh-CN", { hour12: false });
+  }
+  tickNow();
+  setInterval(tickNow, 1000);
+
+  function toDate() {
+    var v = Number($("#tsIn").value);
+    if (!v) { $("#tsOut").textContent = "—"; return; }
+    var d = new Date(v * 1000);
+    var s = d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()) + " " +
+            pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + ":" + pad2(d.getSeconds());
+    $("#tsOut").textContent = s + "  (本地时间)";
+  }
+  if ($("#tsBtn")) $("#tsBtn").addEventListener("click", toDate);
+  if ($("#tsIn")) $("#tsIn").addEventListener("input", toDate);
+  toDate();
+
+  function toTs() {
+    var v = $("#dtIn").value.trim();
+    var d = new Date(v.replace(/-/g, "/"));
+    $("#dtOut").textContent = isNaN(d.getTime()) ? "无法解析" : Math.floor(d.getTime() / 1000) + "  (Unix 秒)";
+  }
+  if ($("#dtIn")) { $("#dtIn").addEventListener("input", toTs); toTs(); }
+
+  var rf = $("#sysRefresh");
+  function refreshFp() {
+    var el = $("#vFp");
+    if (!el) return;
+    el.textContent = md5($("#vDisk").textContent + $("#vBoard").textContent);
+  }
+  refreshFp();
+
+  if (rf) rf.addEventListener("click", async function () {
+    rf.disabled = true;
+    logLine("SystemHelper.Init() …", "warn");
+    await sleep(420);
+    var sfx = Math.floor(Math.random() * 9000 + 1000);
+    $("#vDisk").textContent = "WD-WCC4N2PK" + sfx;
+    $("#vBoard").textContent = "8F3A-2C71-9D04-" + sfx;
+    refreshFp();
+    rf.disabled = false;
+    logLine("SystemHelper.Init() 完成 · 授权指纹重算", "ok");
+  });
+}
+
+/* ============================================================
+   08 加密
+   ============================================================ */
+function md5(str) {
+  function utf8Bytes(s) {
+    var enc = unescape(encodeURIComponent(s));
+    var out = [];
+    for (var i = 0; i < enc.length; i++) out.push(enc.charCodeAt(i));
+    return out;
+  }
+  function rotl(x, c) { return (x << c) | (x >>> (32 - c)); }
+
+  var bytes = utf8Bytes(str);
+  var bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  var lo = bitLen >>> 0;
+  var hi = Math.floor(bitLen / 4294967296) >>> 0;
+  bytes.push(lo & 255, (lo >>> 8) & 255, (lo >>> 16) & 255, (lo >>> 24) & 255);
+  bytes.push(hi & 255, (hi >>> 8) & 255, (hi >>> 16) & 255, (hi >>> 24) & 255);
+
+  var a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  var S = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+           5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+           4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+           6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+  var K = [];
+  for (var i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+
+  for (var off = 0; off < bytes.length; off += 64) {
+    var M = [];
+    for (var j = 0; j < 16; j++) {
+      M[j] = bytes[off + j * 4] | (bytes[off + j * 4 + 1] << 8) |
+             (bytes[off + j * 4 + 2] << 16) | (bytes[off + j * 4 + 3] << 24);
+    }
+    var A = a0, B = b0, C = c0, D = d0;
+    for (var t = 0; t < 64; t++) {
+      var F, g;
+      if (t < 16) { F = (B & C) | (~B & D); g = t; }
+      else if (t < 32) { F = (D & B) | (~D & C); g = (5 * t + 1) % 16; }
+      else if (t < 48) { F = B ^ C ^ D; g = (3 * t + 5) % 16; }
+      else { F = C ^ (B | ~D); g = (7 * t) % 16; }
+
+      var tmp = D;
+      D = C; C = B;
+      var sum = (A + F + K[t] + M[g]) | 0;
+      B = (B + rotl(sum, S[t])) | 0;
+      A = tmp;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+
+  function hexLE(n) {
+    var s = "";
+    for (var i = 0; i < 4; i++) s += ((n >>> (i * 8)) & 255).toString(16).padStart(2, "0");
+    return s;
+  }
+  return hexLE(a0) + hexLE(b0) + hexLE(c0) + hexLE(d0);
+}
+
+function refreshMd5() {
+  var inp = $("#md5In");
+  if (!inp) return;
+  var out = md5(inp.value);
+  if ($("#md5Short").checked) out = out.slice(8, 24);
+  if ($("#md5Upper").checked) out = out.toUpperCase();
+  $("#md5Out").textContent = out;
+}
+
+/* 示意用 AES 替身：UTF-8 → XOR(key) → Base64，可逆 */
+function b64encode(bytes) {
+  var bin = "";
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+function b64decode(str) {
+  var bin = atob(str);
+  var out = [];
+  for (var i = 0; i < bin.length; i++) out.push(bin.charCodeAt(i));
+  return out;
+}
+function aesDemo(text, key, encrypt) {
+  var bytes;
+  if (encrypt) {
+    bytes = Array.prototype.slice.call(new TextEncoder().encode(text));
+  } else {
+    bytes = b64decode(text);
+  }
+  var k = [];
+  for (var j = 0; j < key.length; j++) k.push(key.charCodeAt(j) & 255);
+  if (!k.length) k = [7];
+  for (var n = 0; n < bytes.length; n++) bytes[n] = bytes[n] ^ k[n % k.length];
+  if (encrypt) return b64encode(bytes);
+  try { return new TextDecoder("utf-8").decode(new Uint8Array(bytes)); }
+  catch (e) { return "(解码失败)"; }
+}
+
+function bindCrypto() {
+  ["md5In", "md5Upper", "md5Short"].forEach(function (id) {
+    var el = $("#" + id);
+    if (el) el.addEventListener(id === "md5In" ? "input" : "change", refreshMd5);
+  });
+  refreshMd5();
+
+  var enc = $("#aesEnc"), dec = $("#aesDec");
+  function runEnc(silent) {
+    var key = $("#aesKey").value || "yoyo-toolkit-key";
+    $("#aesOut").textContent = aesDemo($("#aesIn").value, key, true);
+    $("#aesState").textContent = "AESEncrypt → Base64";
+    if (!silent) logLine("RSAHelper.AESEncrypt(plain, key)", "ok");
+  }
+  if (enc) enc.addEventListener("click", function () { runEnc(false); });
+  runEnc(true);
+  if (dec) dec.addEventListener("click", function () {
+    var key = $("#aesKey").value || "yoyo-toolkit-key";
+    var cipher = $("#aesOut").textContent;
+    if (!cipher || cipher === "—") { $("#aesState").textContent = "先加密"; return; }
+    $("#aesOut").textContent = aesDemo(cipher, key, false);
+    $("#aesState").textContent = "AESDecrypt → 明文";
+    logLine("RSAHelper.AESDecrypt(cipher, key)", "ok");
+  });
+}
+
+/* ============================================================
+   复制
+   ============================================================ */
+function bindCopy() {
+  $$("[data-copy]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var el = $("#" + b.getAttribute("data-copy"));
+      if (!el) return;
+      var text = el.textContent || "";
+      function fallback() {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = false;
+        try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
+        document.body.removeChild(ta);
+        logLine(ok ? "已复制：" + text.slice(0, 40) : "复制失败（浏览器权限）", ok ? "ok" : "err");
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+          logLine("已复制：" + text.slice(0, 40), "ok");
+        }, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", function () {
+  renderNav();
+  bindFilter("#navFind");
+  bindFilter("#globalFind");
+  bindRail();
+  bindTheme();
+  bindNavPage();
+  bindControls();
+  buildProgressDots();
+  bindProgress();
+  bindNotifies();
+  bindNet();
+  bindSystem();
+  bindCrypto();
+  bindCopy();
+
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      var f = $("#globalFind");
+      if (f) f.focus();
+    }
+  });
+
+  var startId = (location.hash || "").replace("#", "");
+  go(PAGES[startId] ? startId : "overview", true);
+  try {
+    if (new URLSearchParams(location.search).get("theme") === "dark") setTheme("dark");
+  } catch (err) { /* 忽略 */ }
+  window.addEventListener("hashchange", function () {
+    var h = (location.hash || "").replace("#", "");
+    if (PAGES[h] && h !== current) go(h, true);
+  });
+  logLine("MainNavigation 已注册 8 个 NavigateModel", "ac");
+  updateProgressUI();
+});
+</script>
+</body>
+</html>

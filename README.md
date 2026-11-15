@@ -15,12 +15,21 @@
 | 导航 | `YoYo.Toolkit.Navigations` | `BaseNavigation` 页面导航，含进入/离开生命周期钩子与强类型参数 |
 | 窗口 | `YoYo.Toolkit.Services` | `WindowService` 多窗口注册、跨线程关闭 |
 | 网络 | `YoYo.Toolkit.Net.Http`、`.Pings` | `BaseRequest` / `BaseResponse` 请求基类；`NetworkPing` 连通性检测 |
-| 控件 | `YoYo.Toolkit.Controls.*` | 环形进度、树形下拉、水印输入框、图标选项、描边文字 |
+| 控件 | `YoYo.Toolkit.Controls.*` | 树形下拉、水印输入框、图标选项、描边文字 |
+| 进度 | `YoYo.Toolkit.Controls.Progress` | `ProgressIndicator` 20 种动效 + 确定态，`StepTracker` 流程步骤条，自带主题字典与浅/深令牌，开箱即用且可整体重写 |
 | 附加行为 | `YoYo.Toolkit.Input`、`.Animations` | `PasswordHelper` 密码绑定；`OSKHelper` 触摸屏软键盘 |
 | 通知 | `YoYo.Toolkit.Notifies` | `TMessageBox` 可换肤消息框 |
 | 系统 | `YoYo.Toolkit.System`、`.WinApis` | 硬盘序列号、主板 ID、机器名；`Kernel32.CopyMemory` |
 | 加密 | `YoYo.Toolkit.CryptoServices` | `MD5Helper` 摘要；`RSAHelper` AES/RSA 加解密 |
 | 工具 | `YoYo.Toolkit.Time`、`.Images`、`.Converters` | Unix 时间戳、位图加载、常用值转换器 |
+
+## 界面预览
+
+示例程序三个页面的实际操作录屏（GIF 自动播放，点击看大图）：
+
+| 导航 · 页面切换 | 控件 · 主题控件 | 进度 · 20 种动效 |
+| :---: | :---: | :---: |
+| <a href="screenshots/navigation.gif"><img src="screenshots/navigation.gif" width="280" alt="导航演示" /></a> | <a href="screenshots/controls.gif"><img src="screenshots/controls.gif" width="280" alt="控件演示" /></a> | <a href="screenshots/progress.gif"><img src="screenshots/progress.gif" width="280" alt="进度演示" /></a> |
 
 ## 安装
 
@@ -185,7 +194,7 @@ var syncResponse = request.DoWorkerSync();
                     SelectCommand="{Binding SelectDeviceCommand}" />
 ```
 
-> **注意**：本包不内置主题资源字典。`TProgressRing`、`IconRadioButton` 等通过 `DefaultStyleKey` 查找样式的控件，需要在宿主应用中提供 `Style` / `ControlTemplate`，否则控件不会呈现内容。`OutlineText`、`PlaceholderTextBox` 以代码绘制为主，可直接使用。
+> **注意**：除 `Controls.Progress` 之外，本包不内置其它控件的主题资源字典。`TProgressRing`、`IconRadioButton` 等通过 `DefaultStyleKey` 查找样式的控件，需要在宿主应用中提供 `Style` / `ControlTemplate`，否则控件不会呈现内容。`OutlineText`、`PlaceholderTextBox` 以代码绘制为主，可直接使用。进度控件的样式与模板随包提供（`Themes/Generic.xaml`），merge 后即可用，详见 [8. 进度控件](#8-进度控件)。
 
 ### 4. 消息框
 
@@ -218,6 +227,10 @@ var md5 = MD5Helper.Md5("hello");
 var cipher = RSAHelper.AESEncrypt("plain-text", "your-key");
 ```
 
+> `NetworkPing.PingHost` 返回 `PingReply?`，不可达时返回 `null` 而不抛异常。
+> 注意 `PingReply.Options` **可能为 `null`**（本机回环、IPv6 链路本地地址、部分虚拟网卡只回 ICMP 不带 IP 选项），
+> 直接取 `reply.Options.Ttl` 会抛 `NullReferenceException`——工具内部已做空值保护，取值失败时退化为占位符。
+
 > 加解密示例仅作接口参考。用于生产环境前，请自行确认密钥管理、IV 与填充模式是否符合你的安全要求。
 
 ### 6. 密码框绑定
@@ -237,13 +250,226 @@ var cipher = RSAHelper.AESEncrypt("plain-text", "your-key");
 </ResourceDictionary>
 ```
 
+### 8. 进度控件
+
+进度控件是唯一自带主题资源的模块：`Themes/Generic.xaml` 里两个隐式样式在宿主 merge 后自动生效，**开箱即用、无需写样式**，同时保留四条自上而下的重写通道。
+
+```xml
+<Window xmlns:p="clr-namespace:YoYo.Toolkit.Controls.Progress;assembly=YoYo.Toolkit">
+  <StackPanel>
+    <!-- 不确定：只要一个枚举值 -->
+    <p:ProgressIndicator Kind="Arc" IsActive="True" Width="40" Height="40" />
+    <p:ProgressIndicator Kind="Signal" IsActive="True" StatusText="正在采集" Width="190" Height="44" />
+
+    <!-- 确定：Value 走 Minimum/Maximum，Percent 只读输出 0~1 -->
+    <p:ProgressIndicator Kind="FlowBar" IsIndeterminate="False"
+                         Minimum="0" Maximum="100" Value="62"
+                         Width="180" Height="20" />
+
+    <!-- 流程步骤条 -->
+    <p:StepTracker Steps="{Binding Steps}" CurrentIndex="{Binding CurrentStep}" />
+  </StackPanel>
+</Window>
+```
+
+`StepTracker` 默认 `HorizontalAlignment="Stretch"`：每个步骤占一个等宽单元格（内部是 `UniformGrid` + 左右半段连接线），步数与标签长度变化都不会撑破容器，也不会把末步文字裁掉。竖排时把 `Orientation` 设为 `Vertical` 即可，模板会自动切换成"节点在上、标签在下"的项模板。
+
+#### 20 种不确定动效
+
+| 分组 | Kind |
+| --- | --- |
+| 环形（12） | `Arc` 旋转弧环、`MarchingRing` 行进虚线环、`DualRing` 对流双环、`GlowRing` 流光环、`Sonar` 声纳波纹、`Radar` 雷达扫描臂、`Breathing` 呼吸光球、`Petal` 花瓣绽放、`Orbit` 轨道点、`TickRing` 刻度游标环、`Comet` 流星尾迹、`DotMatrix` 点阵涟漪 |
+| 条形与波形（6） | `FlowBar` 流动扫光条、`CounterFlow` 对向游走、`Scan` 屏幕扫描、`Skeleton` 骨架扫光、`Wave` 行波线、`Signal` 信号带 |
+| 行内小型（2） | `BounceDots` 三点脉动、`Typing` 打字省略号 |
+
+其中 14 套是纯声明式（模板里的 `Storyboard` 推导动画），6 套由 `ProgressPainter` 自绘参数化阵列（`Signal` / `Ticks` / `TicksProgress` / `Wave` / `Matrix` / `Comet`），阵列的相位由 `Phase` 属性驱动，因此新增一种阵列只需加一个 `Render*` 方法和一个枚举值，不必再写一套 XAML。
+
+#### 确定态
+
+`IsIndeterminate="False"` 时按 `Minimum` / `Maximum` / `Value` 计算 `Percent`。内置三套确定态模板：`FlowBar.Determinate`（条形）、`Arc.Determinate`（环形弧）、`TickRing.Determinate`（分段刻度），中央自动显示百分比。其它 Kind 会自动回落到这三者之一（`DeterminateFallback`）。
+
+边界行为：`0` 时弧线与分段全部不点亮、条形宽度为 0；`1` 时整圆闭合；`Maximum == Minimum` 时 `Percent` 返回 0，不抛除零异常。
+
+#### 状态与动效强度
+
+`State` 走 `VisualStateManager`，状态组固定名为 `ProgressStates`，成员为 `Idle` / `Running` / `RunningReduced` / `Success` / `Error` / `Paused`。
+
+- `IsActive` 是 `State` 的便捷开关：`State` 仍为 `Idle` 而 `IsActive="True"` 时按 `Running` 处理。
+- `Motion="Reduced"` 走 `RunningReduced` 分支，模板里只放静态态即可实现「减少动效」的无障碍降级。
+- `Success` / `Error` 用于跑完的收尾态，兜底模板会显示勾 / 叉。
+
+#### 换肤：只换令牌，不动模板
+
+```xml
+<Application.Resources>
+  <ResourceDictionary>
+    <ResourceDictionary.MergedDictionaries>
+      <!-- 深色皮肤：整包替换令牌，模板一行不改 -->
+      <ResourceDictionary Source="pack://application:,,,/YoYo.Toolkit;component/Themes/Progress.Tokens.Dark.xaml" />
+    </ResourceDictionary.MergedDictionaries>
+  </ResourceDictionary>
+</Application.Resources>
+```
+
+令牌分四组，浅深两版键名完全一致：`Progress.Brush.*`（Accent / AccentSoft / Secondary / Track / Guide / Success / Error / OnAccent / Surface / Ink / InkSecondary / InkDim）、`Progress.Thickness.*`、`Progress.Duration.*`、`Progress.Opacity.*` / `Progress.Size.*` / `Progress.Font.Caption`。
+
+只想改主色而不换整套皮肤时，直接在宿主资源里覆盖单个键，或对单实例设 `AccentBrush`：
+
+```xml
+<p:ProgressIndicator Kind="Arc" IsActive="True" AccentBrush="#B4700F" />
+```
+
+#### 自定义模板的四条通道
+
+按优先级从高到低，命中即止：
+
+| 通道 | 做法 | 适用 |
+| --- | --- | --- |
+| 1. 显式 `Template` | `<p:ProgressIndicator.Template>` 或样式 `Setter` | 单处特例 |
+| 2. `TemplateKey` | `TemplateKey="My.BrandLoading"`，指向宿主任意 `ControlTemplate` | 设计稿新增动效，不扩充枚举 |
+| 3. 覆盖 `Progress.Template.{Kind}.{Indeterminate\|Determinate}` | 在宿主资源里定义同名键 | 整套替换某个 Kind |
+| 4. 覆盖 `Progress.Template.Default` | 兜底模板 | 全局统一风格 |
+
+第 3、4 条能生效，靠的是 WPF 对 `MergedDictionaries` 的**倒序查找**：`ProgressTheme` 把自带的模板字典 `Insert(0, ...)` 插到宿主字典列表最前面，宿主后 merge 的同名资源因此优先命中。
+
+自己写模板时遵守三条约定即可正常驱动动画：
+
+```xml
+<ControlTemplate x:Key="My.BrandLoading" TargetType="{x:Type p:ProgressIndicator}">
+  <Grid x:Name="PART_Root" Background="Transparent">
+    <VisualStateManager.VisualStateGroups>
+      <VisualStateGroup x:Name="ProgressStates">
+        <VisualState x:Name="Idle" />
+        <VisualState x:Name="Running">
+          <Storyboard>
+            <DoubleAnimation Storyboard.TargetName="Spin"
+                             Storyboard.TargetProperty="(RotateTransform.Angle)"
+                             From="0" To="360"
+                             Duration="{DynamicResource Progress.Duration.Base}"
+                             RepeatBehavior="Forever" />
+          </Storyboard>
+        </VisualState>
+        <VisualState x:Name="RunningReduced" />
+        <VisualState x:Name="Success" />
+        <VisualState x:Name="Error" />
+        <VisualState x:Name="Paused" />
+      </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+
+    <Ellipse Width="40" Height="40" StrokeThickness="3"
+             Stroke="{Binding AccentBrush, RelativeSource={RelativeSource TemplatedParent}}"
+             StrokeDashArray="2 3" RenderTransformOrigin="0.5,0.5">
+      <Ellipse.RenderTransform>
+        <RotateTransform x:Name="Spin" />
+      </Ellipse.RenderTransform>
+    </Ellipse>
+  </Grid>
+</ControlTemplate>
+```
+
+1. 根元素必须是 `Grid`（或任意 `FrameworkElement`），第一列放视觉、第二列放状态文案。
+2. 状态组必须叫 `ProgressStates`，六个状态名一个都不能少——`VisualStateManager` 找不到对应状态时会静默跳过，动画看起来就「不动」。
+3. `Storyboard.TargetProperty` 指向 `RotateTransform` / `ScaleTransform` / `TranslateTransform` 时，路径要带类型限定符（`(RotateTransform.Angle)` 而不是 `Angle`）。不带限定符在部分模板里能过，但换到另一套变换就会在 `OnApplyTemplate` 阶段抛 `无法解析属性路径中的所有属性引用`。
+
+> ⚠️ **命名空间冲突**：本包根命名空间是 `YoYo.Toolkit`，其下已有 `YoYo.Toolkit.System` 等子命名空间。宿主工程若命名为 `YoYo.Toolkit.Sample`、`YoYo.Toolkit.Demo` 这类**以 `YoYo.Toolkit` 为前缀**的名字，XAML 编译时会把你写的 `System.Windows.*` 解析到 `YoYo.Toolkit.System`，报 `CS0234: 命名空间"YoYo.Toolkit.System"中不存在类型或命名空间名"Windows"`。示例工程因此叫 `YoYo.ToolkitSample`（无点号），宿主请避开 `YoYo.Toolkit.*` 前缀。
+
+## 演示与验收
+
+示例程序的壳子本身就是一次导航演示：左侧 8 个 `NavigateModel`，全部由
+`BaseNavigation.GoTo` 驱动，页面用 `INavigateIn` / `INavigateOut` 接管进入与离开。
+
+```bash
+cd YoYo.Toolkit.Sample/bin/Debug/net8.0-windows
+
+# 打开示例程序（左侧导航多页；标题栏右侧月亮/太阳图标切深浅色，Ctrl+T 同效）
+./YoYo.Toolkit.Sample.exe
+
+# 指定落地页；DeviceView 用参数导航进入
+./YoYo.Toolkit.Sample.exe --page ProgressView
+./YoYo.Toolkit.Sample.exe --page DeviceView --param SN-0001
+
+# 整页长图 / 深色令牌
+./YoYo.Toolkit.Sample.exe --page ControlsView --shot out.png --height 1100
+./YoYo.Toolkit.Sample.exe --page ProgressView --shot out-dark.png --height 1100 --dark
+
+# 单独截一个消息框（四级样式核对，绕开模态阻塞）
+./YoYo.Toolkit.Sample.exe --msg Question --shot dialog.png
+./YoYo.Toolkit.Sample.exe --msg Error --dark --shot dialog-dark.png
+
+# 停住全部动画（验证故事板确实停止）
+./YoYo.Toolkit.Sample.exe --page ProgressView --shot paused.png --paused
+
+# 确定态边界值 / 步骤下标
+./YoYo.Toolkit.Sample.exe --page ProgressView --shot det0.png --value 0 --step 0
+
+# 单控件探针：只渲染一个控件，逐套核对几何
+./YoYo.Toolkit.Sample.exe --probe Orbit --probe-size 400 --shot orbit.png
+
+# 逐 Kind 冒烟：模板应用抛不抛异常
+./YoYo.Toolkit.Sample.exe --diag     # 结果写到 documents/diag.txt
+
+# 阵列类 CPU 基线（Release x64）
+./YoYo.Toolkit.Sample.exe --cpu      # 结果写到 documents/cpu.txt
+
+# 控件用法目录（按控件给最小可复制片段，--viewer 的值决定默认选中的控件）
+./YoYo.Toolkit.Sample.exe --viewer ProgressView --shot usage-progress.png
+./YoYo.Toolkit.Sample.exe --viewer ControlsView --dark --shot usage-controls-dark.png
+
+# 连通性冒烟：Options 为 null 的应答不再抛 NRE
+./YoYo.Toolkit.Sample.exe --ping     # 结果写到 documents/ping.txt
+
+# 窗口外框冒烟：读回 DWM 圆角偏好与窗口样式
+./YoYo.Toolkit.Sample.exe --frame    # 结果写到 documents/frame.txt
+```
+
+### 界面里的「控件用法」查看器
+
+页头右上角的「控件用法」（或 `F12`）打开的是**按控件组织的最小用法片段**，不是整页源码：
+
+- 左侧是全库控件目录，打开时自动定位到当前页演示的那个控件；右侧是它的命名空间声明、若干种用法、宿主必读提示；
+- `Services/ControlSamples.cs` 是唯一的内容源：每个条目给「一个属性组的最小可复制 XAML」，覆盖不确定/确定态、错误态、竖排、自定义模板、多值转换器等常踩场景；
+- 只读、可选中局部复制，「复制」按钮把当前控件全部片段（带 `<!-- 01 · ... -->` 注释标题）一次带走，深浅色跟随令牌。
+
+`Services/XamlHighlighter.cs` 是极简着色器（注释 / 字符串 / 标签名 / 属性名 / 尖括号五类 token），
+没有引入 AvalonEdit 之类的第三方编辑器。
+
+### 示例程序的两个前提
+
+1. **导航需要一个服务容器**。`BaseNavigation.GoTo` 会先用 `VMType` 取一次 ViewModel 调
+   `NavigateIn`，再用 `Type` 取一次 View 挂载——两次必须拿到**同一组对象**，否则生命周期钩子会打到
+   没人用的 ViewModel 上。`Services/ShellService.cs` 用几十行缓存实现了这件事，换成
+   `IServiceProvider` 适配器即可。
+2. **除 Progress 外的控件都没有内置主题字典**。`TreeComboBox`、`TProgressRing`、
+   `IconRadioButton`、`PlaceholderTextBox` 必须由宿主提供 `Style`，否则不渲染。
+   `Themes/Controls.xaml` 就是宿主示例，其中几处是踩过的坑：
+   - `PlaceholderTextBox` 靠模板里名为 `PART_DropButton` 的 `Border` 画水印，缺了就没有占位文字。
+     水印是 `VisualBrush`：`TextBlock.Margin` 在自动布局里基本不进内容边界，所以 `TransformX=16`
+     是补输入文字的左内边距、`TransformY` 是补垂直位置，**不是额外偏移**。库默认 `TransformY=15`
+     偏大，会把水印压到输入框下沿被裁；32px 高的输入框里宿主样式设 `TransformY="7"` 才与输入文字
+     同一基线（`Themes/Controls.xaml` 的 `Sample.Placeholder` 已这么做）。改输入框高度时按
+     `(内部高 − 水印字形高) / 2` 重算即可，不用改控件源码；
+   - 表格行若用 `Button` 承载，模板里的 `ContentPresenter` 必须跟随
+     `HorizontalContentAlignment`，否则 `*` 列按内容测量、列宽塌陷；
+   - `IconRadioButton.Icon` 是 `string`，`TemplateBinding` 到 `Path.Data` 不会走类型转换器，
+     需要一个 `string → Geometry` 的转换器。
+
+### 示例程序的字号阶梯
+
+`Themes/Tokens.Light.xaml` 定义 `Sample.Font.*`：Micro 11 / Tiny 12 / Small 13 / Body 14 /
+CardTitle 15 / Title 21 / Hero 25；深色字典只覆盖颜色、共用同一套字号。XAML 里剩余的硬编码
+`FontSize` 与 `Services/XamlHighlighter.cs` 里的代码字号按同一台阶放大，输入框与按钮高度、
+`LineHeight` 同步调整，控件用法查看器的左栏也相应加宽，避免放大后副标题被省略号截断。
+库 `YoYo.Toolkit` 的模板字号不受影响。
+
 ## 项目结构
 
 ```
 YoYo.Toolkit/
 ├─ Animations/      动画附加属性
-├─ Controls/        BusyIndicators、Button、ComboBox、Text
-├─ Converters/      Bool / Null 与 Visibility 等转换器
+├─ Controls/
+│  ├─ Progress/     ProgressIndicator、ProgressPainter、StepTracker
+│  └─ ...           BusyIndicators、Button、ComboBox、Text
+├─ Converters/      百分比 → 弧线几何 / 百分比文案、Bool / Null 与 Visibility
 ├─ CryptoServices/  MD5、RSA(AES)
 ├─ Images/          位图加载扩展
 ├─ Input/           PasswordBox 绑定、触摸屏软键盘
@@ -254,11 +480,21 @@ YoYo.Toolkit/
 ├─ Notifies/        TMessageBox
 ├─ Services/        WindowService
 ├─ System/          硬件与机器信息
+├─ Themes/          Generic.xaml、Progress.Tokens.Light/Dark.xaml、Progress.Templates.xaml
 ├─ Time/            Unix 时间戳
 └─ WinApis/         kernel32 互操作
+
+YoYo.Toolkit.Sample/          示例程序（工程名不能带 . 前缀，见上文命名空间冲突）
+├─ Themes/          Tokens.Light/Dark.xaml（令牌）、Styles.xaml（外壳）、Controls.xaml（宿主模板）
+├─ Navigations/     MainNavigation：9 个 NavigateModel，DeviceView 不进侧栏
+├─ Services/        ShellService：IGetService 的宿主实现，页面单例
+├─ ViewModels/      Shell + 8 页 + DeviceViewModel（演示 INavigateIn<T>）
+├─ Views/           8 个 UserControl + MyMessageDialog（BaseMessageDialog 子类）
+├─ Net/             BaseRequest / BaseResponse 的四个示例子类
+└─ MainWindow.xaml  WindowChrome 自绘标题栏 + 侧栏 + 页头 + 状态栏
 ```
 
-示例工程见 `YoYo.Toolkit.Sample`。
+示例工程见 `YoYo.Toolkit.Sample`。运行 `YoYo.Toolkit.Sample.exe` 打开演示页，命令行参数见文末「演示与验收」。
 
 ## 构建与打包
 

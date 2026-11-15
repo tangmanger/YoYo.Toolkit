@@ -1,0 +1,137 @@
+﻿<UserControl x:Class="YoYo.ToolkitSample.Views.DeviceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="{DynamicResource Sample.FontFamily}"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+
+    <StackPanel>
+
+        <Border Style="{StaticResource Sample.Card}" Padding="18,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Width="44" Height="44" CornerRadius="10"
+                        Background="{DynamicResource Sample.AccentSoft}" VerticalAlignment="Top">
+                    <Path Data="{StaticResource Icon.Cpu}" Width="20" Height="20" Stretch="Uniform"
+                          Stroke="{DynamicResource Sample.Accent}" StrokeThickness="1.6"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <StackPanel Grid.Column="1" Margin="14,0,0,0">
+                    <TextBlock Text="设备详情 · 参数导航演示" Style="{StaticResource Sample.Kicker}" />
+                    <TextBlock Text="{Binding SerialNumber}" FontSize="23" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Sample.Ink}" Margin="0,3,0,0"
+                               FontFamily="{DynamicResource Sample.MonoFontFamily}" />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Border Style="{StaticResource Sample.Chip}" Margin="0,0,6,0">
+                            <TextBlock Text="{Binding PollState}" Style="{StaticResource Sample.ChipText}" />
+                        </Border>
+                        <Border Style="{StaticResource Sample.Chip}">
+                            <TextBlock Style="{StaticResource Sample.ChipText}">
+                                <Run Text="进入于 " />
+                                <Run Text="{Binding EnteredAt, Mode=OneWay}" />
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Grid.Column="2" Style="{StaticResource Sample.Btn}" Content="停止轮询"
+                        VerticalAlignment="Top" Command="{Binding StopPollingCommand}" />
+            </Grid>
+        </Border>
+
+        <Border Style="{StaticResource Sample.Note}" Margin="0,13,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Path Grid.Column="0" Data="{StaticResource Icon.Question}" Width="13" Height="13"
+                      Stretch="Uniform" Stroke="{DynamicResource Sample.Warn}" StrokeThickness="1.9"
+                      VerticalAlignment="Top" Margin="0,3,0,0" StrokeStartLineCap="Round" />
+                <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Sample.Muted}"
+                           Foreground="{DynamicResource Sample.Ink2}"
+                           Text="这一页不在侧栏里：只能由「导航与窗口」页的 GoTo(&quot;DeviceView&quot;, &quot;SN-0001&quot;) 或 GoTo(..., &quot;SN-0042&quot;) 带参进入。回去再用另一个参数进来，观察状态栏与日志里两次回调的顺序。" />
+            </Grid>
+        </Border>
+
+        <Grid Margin="0,13,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Padding="14,12" Margin="0,0,10,0">
+                <StackPanel>
+                    <TextBlock Text="生命周期实况" Style="{StaticResource Sample.CardTitle}" Margin="0,0,0,8" />
+                    <TextBlock Style="{StaticResource Sample.Muted}" Margin="0,0,0,10"
+                               Text="GoTo 会先用 VMType 取一次 VM 调无参 NavigateIn()，再取一次调 NavigateIn&lt;string&gt;(param)。两次回调都在，参数只到第二个。" />
+
+                    <Border Background="{DynamicResource Sample.Surface2}" CornerRadius="6" Padding="10,8">
+                        <StackPanel>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="124" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="NavigateIn()" Style="{StaticResource Sample.Kicker}" />
+                                <TextBlock Grid.Column="1" Text="先到，跳过加载" Style="{StaticResource Sample.Kicker}"
+                                           Foreground="{DynamicResource Sample.Ok}" />
+                            </Grid>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="124" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="NavigateIn&lt;T&gt;()" Style="{StaticResource Sample.Kicker}" />
+                                <TextBlock Grid.Column="1" Text="接参，开始加载" Style="{StaticResource Sample.Kicker}"
+                                           Foreground="{DynamicResource Sample.Accent}" />
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="124" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="NavigateOut()" Style="{StaticResource Sample.Kicker}" />
+                                <TextBlock Grid.Column="1" Text="离开时停轮询、退订阅" Style="{StaticResource Sample.Kicker}"
+                                           Foreground="{DynamicResource Sample.Err}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,12">
+                <StackPanel>
+                    <TextBlock Text="进入与释放" Style="{StaticResource Sample.CardTitle}" Margin="0,0,0,8" />
+                    <Border Style="{StaticResource Sample.CodeBlock}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="protected override void OnNavigatedIn(string? sn)" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="{}{" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    SerialNumber = sn;" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    IsPolling = true;   // 开轮询" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="}" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Margin="0,5,0,0"
+                                       Text="protected override void OnNavigatedOut()" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="{}{" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    IsPolling = false;  // 停轮询" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    Unsubscribe();      // 退订阅" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </StackPanel>
+</UserControl>

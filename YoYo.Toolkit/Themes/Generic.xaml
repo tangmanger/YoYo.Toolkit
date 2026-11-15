@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:p="clr-namespace:YoYo.Toolkit.Controls.Progress">
+
+    <!--
+        主题字典：仅承载 DefaultStyleKey 的默认样式，因此开箱即用，宿主无需写任何 XAML。
+        这里不 merge 令牌与模板——它们由 ProgressTheme.EnsureLoaded() 挂到 Application.Resources，
+        以便宿主后续 merge 的同名资源能覆盖（WPF 对 MergedDictionaries 是倒序查找）。
+
+        宿主重写本样式的两种方式：
+        1. 在 App.xaml 定义 <Style TargetType="{x:Type p:ProgressIndicator}">，隐式样式优先于 ThemeStyle；
+        2. 只覆盖某个动效时，定义同名 ControlTemplate 键（如 Progress.Template.Sonar.Indeterminate）。
+    -->
+
+    <Style TargetType="{x:Type p:ProgressIndicator}">
+        <Setter Property="AccentBrush" Value="{DynamicResource Progress.Brush.Accent}" />
+        <Setter Property="Template" Value="{DynamicResource Progress.Template.Default}" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style TargetType="{x:Type p:StepTracker}">
+        <Setter Property="AccentBrush" Value="{DynamicResource Progress.Brush.Accent}" />
+        <Setter Property="Template" Value="{DynamicResource Progress.Template.StepTracker}" />
+        <!--
+            步骤条按可用宽度等分排布，默认就应铺满容器；
+            给 Left 会让控件按内容测量，等分单元格退化成按内容宽，标签挤成一团。
+        -->
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+</ResourceDictionary>

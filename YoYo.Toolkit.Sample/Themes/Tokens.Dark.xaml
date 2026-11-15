@@ -1,0 +1,60 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        深色令牌：只覆盖同名键，样式与模板不感知。
+        与 Themes/Progress.Tokens.Dark.xaml 一起 merge，进度控件与应用外壳同步换肤。
+    -->
+
+    <Color x:Key="Sample.Color.Page">#0D1011</Color>
+    <Color x:Key="Sample.Color.Surface">#161A1C</Color>
+    <Color x:Key="Sample.Color.Surface2">#1A1F21</Color>
+    <Color x:Key="Sample.Color.Surface3">#131719</Color>
+    <Color x:Key="Sample.Color.Line">#1CFFFFFF</Color>
+    <Color x:Key="Sample.Color.LineStrong">#30FFFFFF</Color>
+    <Color x:Key="Sample.Color.Ink">#E8ECEC</Color>
+    <Color x:Key="Sample.Color.Ink2">#9AA3A7</Color>
+    <Color x:Key="Sample.Color.Ink3">#7E888D</Color>
+    <Color x:Key="Sample.Color.Accent">#2BB3A8</Color>
+    <Color x:Key="Sample.Color.AccentInk">#57CFC5</Color>
+    <Color x:Key="Sample.Color.AccentSoft">#242BB3A8</Color>
+    <Color x:Key="Sample.Color.Warn">#D99533</Color>
+    <Color x:Key="Sample.Color.WarnSoft">#26D99533</Color>
+    <Color x:Key="Sample.Color.Ok">#5BB583</Color>
+    <Color x:Key="Sample.Color.OkSoft">#265BB583</Color>
+    <Color x:Key="Sample.Color.Err">#E0705F</Color>
+    <Color x:Key="Sample.Color.ErrSoft">#24E0705F</Color>
+    <Color x:Key="Sample.Color.Track">#1AFFFFFF</Color>
+
+    <!-- XAML 查看器的语法着色 -->
+    <Color x:Key="Sample.Color.Syntax.Tag">#4FD1C5</Color>
+    <Color x:Key="Sample.Color.Syntax.Attr">#7FB8E6</Color>
+    <Color x:Key="Sample.Color.Syntax.Value">#E0B46A</Color>
+
+    <SolidColorBrush x:Key="Sample.Page" Color="{StaticResource Sample.Color.Page}" />
+    <SolidColorBrush x:Key="Sample.Surface" Color="{StaticResource Sample.Color.Surface}" />
+    <SolidColorBrush x:Key="Sample.Surface2" Color="{StaticResource Sample.Color.Surface2}" />
+    <SolidColorBrush x:Key="Sample.Surface3" Color="{StaticResource Sample.Color.Surface3}" />
+    <SolidColorBrush x:Key="Sample.Line" Color="{StaticResource Sample.Color.Line}" />
+    <SolidColorBrush x:Key="Sample.LineStrong" Color="{StaticResource Sample.Color.LineStrong}" />
+    <SolidColorBrush x:Key="Sample.Ink" Color="{StaticResource Sample.Color.Ink}" />
+    <SolidColorBrush x:Key="Sample.Ink2" Color="{StaticResource Sample.Color.Ink2}" />
+    <SolidColorBrush x:Key="Sample.Ink3" Color="{StaticResource Sample.Color.Ink3}" />
+    <SolidColorBrush x:Key="Sample.Accent" Color="{StaticResource Sample.Color.Accent}" />
+    <SolidColorBrush x:Key="Sample.AccentInk" Color="{StaticResource Sample.Color.AccentInk}" />
+    <SolidColorBrush x:Key="Sample.AccentSoft" Color="{StaticResource Sample.Color.AccentSoft}" />
+    <SolidColorBrush x:Key="Sample.Warn" Color="{StaticResource Sample.Color.Warn}" />
+    <SolidColorBrush x:Key="Sample.WarnSoft" Color="{StaticResource Sample.Color.WarnSoft}" />
+    <SolidColorBrush x:Key="Sample.Ok" Color="{StaticResource Sample.Color.Ok}" />
+    <SolidColorBrush x:Key="Sample.OkSoft" Color="{StaticResource Sample.Color.OkSoft}" />
+    <SolidColorBrush x:Key="Sample.Err" Color="{StaticResource Sample.Color.Err}" />
+    <SolidColorBrush x:Key="Sample.ErrSoft" Color="{StaticResource Sample.Color.ErrSoft}" />
+    <SolidColorBrush x:Key="Sample.Track" Color="{StaticResource Sample.Color.Track}" />
+    <SolidColorBrush x:Key="Sample.Syntax.Tag" Color="{StaticResource Sample.Color.Syntax.Tag}" />
+    <SolidColorBrush x:Key="Sample.Syntax.Attr" Color="{StaticResource Sample.Color.Syntax.Attr}" />
+    <SolidColorBrush x:Key="Sample.Syntax.Value" Color="{StaticResource Sample.Color.Syntax.Value}" />
+
+    <SolidColorBrush x:Key="Sample.NavActiveBg" Color="{StaticResource Sample.Color.AccentSoft}" />
+    <SolidColorBrush x:Key="Sample.NavHoverBg" Color="#14FFFFFF" />
+
+</ResourceDictionary>

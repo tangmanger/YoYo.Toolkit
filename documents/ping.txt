@@ -1,0 +1,4 @@
+127.0.0.1          0 ms · TTL 128 · 127.0.0.1
+localhost          0 ms · TTL 无 Options · ::1
+::1                0 ms · TTL 无 Options · ::1
+192.0.2.1      不可达（返回 null）

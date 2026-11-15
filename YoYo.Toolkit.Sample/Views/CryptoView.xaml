@@ -1,0 +1,208 @@
+﻿<UserControl x:Class="YoYo.ToolkitSample.Views.CryptoView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="{DynamicResource Sample.FontFamily}"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+
+    <StackPanel>
+
+        <Border Style="{StaticResource Sample.Note}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Path Grid.Column="0" Data="{StaticResource Icon.Bang}" Width="13" Height="13" Stretch="Uniform"
+                      Stroke="{DynamicResource Sample.Warn}" StrokeThickness="1.9" VerticalAlignment="Top"
+                      Margin="0,3,0,0" StrokeStartLineCap="Round" />
+                <TextBlock Grid.Column="1" Margin="8,0,0,0" Style="{StaticResource Sample.Muted}"
+                           Foreground="{DynamicResource Sample.Ink2}"
+                           Text="本页加解密全部在进程内实时计算，可与任何 MD5 工具逐位对照。生产环境的密钥管理、IV 与填充模式请按 RSAHelper 的说明自行确认——示例使用 Encoding.Default，跨机器换语言要留意。" />
+            </Grid>
+        </Border>
+
+        <Grid Margin="0,13,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ============ MD5 ============ -->
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Padding="14,12" Margin="0,0,10,0">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="MD5Helper" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="CryptoServices" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+
+                    <TextBlock Text="明文" Style="{StaticResource Sample.FieldLabel}" Margin="0,0,0,4" />
+                    <TextBox Style="{StaticResource Sample.Input}"
+                             Text="{Binding Md5Input, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Grid Margin="0,10,0,5">
+                        <TextBlock Text="Md5(strText, length, isUpper)" Style="{StaticResource Sample.FieldLabel}"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <CheckBox Style="{StaticResource Sample.Switch}" Content="大写"
+                                      IsChecked="{Binding IsUpper, Mode=TwoWay}" />
+                            <CheckBox Style="{StaticResource Sample.Switch}" Content="16 位" Margin="14,0,0,0"
+                                      IsChecked="{Binding IsShort, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border Background="{DynamicResource Sample.Surface2}"
+                            BorderBrush="{DynamicResource Sample.Line}" BorderThickness="1"
+                            CornerRadius="6" Padding="10,7">
+                        <TextBlock Text="{Binding Md5Output}" FontFamily="{DynamicResource Sample.MonoFontFamily}"
+                                   FontSize="13.5" Foreground="{DynamicResource Sample.Accent}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0"
+                            Margin="0,11,0,9" />
+
+                    <Grid Margin="0,0,0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="78" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Md5(str)" Style="{StaticResource Sample.Kicker}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Md5Plain}" Style="{StaticResource Sample.Kicker}"
+                                   Foreground="{DynamicResource Sample.Ink2}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <Grid Margin="0,0,0,3">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="78" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Md5NoReplace" Style="{StaticResource Sample.Kicker}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Md5NoReplace}" Style="{StaticResource Sample.Kicker}"
+                                   Foreground="{DynamicResource Sample.Ink2}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="78" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Md5Encrypt" Style="{StaticResource Sample.Kicker}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Md5Encrypt}" Style="{StaticResource Sample.Kicker}"
+                                   Foreground="{DynamicResource Sample.Ink2}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+
+                    <TextBlock Style="{StaticResource Sample.Muted}"
+                               Text="文件摘要走 CalculateMD5Hash(filePath)：FileStream 分块读入，大文件不会整块进内存。" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ AES ============ -->
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="RSAHelper · AES" Style="{StaticResource Sample.CardTitle}" />
+                        <TextBlock Text="CryptoServices" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" />
+                    </Grid>
+
+                    <TextBlock Text="明文" Style="{StaticResource Sample.FieldLabel}" Margin="0,0,0,4" />
+                    <TextBox Style="{StaticResource Sample.Input}"
+                             Text="{Binding AesInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Grid Margin="0,9,0,4">
+                        <TextBlock Text="key" Style="{StaticResource Sample.FieldLabel}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding KeyHint}" HorizontalAlignment="Right"
+                                   Style="{StaticResource Sample.Kicker}" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBox Style="{StaticResource Sample.Input}"
+                             FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="13"
+                             Text="{Binding AesKey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,11,0,0">
+                        <Button Style="{StaticResource Sample.Btn.Primary}" Content="AESEncrypt"
+                                Command="{Binding EncryptCommand}" />
+                        <Button Style="{StaticResource Sample.Btn}" Content="AESDecrypt" Margin="7,0,0,0"
+                                Command="{Binding DecryptCommand}" />
+                        <TextBlock Text="{Binding AesState}" Style="{StaticResource Sample.Kicker}"
+                                   VerticalAlignment="Center" Margin="9,0,0,0" />
+                    </StackPanel>
+
+                    <Border Background="{DynamicResource Sample.Surface2}"
+                            BorderBrush="{DynamicResource Sample.Line}" BorderThickness="1"
+                            CornerRadius="6" Padding="10,8" Margin="0,10,0,0" MinHeight="62">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120">
+                            <TextBlock Text="{Binding AesOutput}" FontFamily="{DynamicResource Sample.MonoFontFamily}"
+                                       FontSize="12" Foreground="{DynamicResource Sample.Ink2}"
+                                       TextWrapping="Wrap" />
+                        </ScrollViewer>
+                    </Border>
+
+                    <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0"
+                            Margin="0,10,0,8" />
+                    <TextBlock Style="{StaticResource Sample.Kicker}" TextWrapping="Wrap"
+                               Text="EncryptKey / SetIV(byte[]) 可设静态默认值；示例直接传 key，输出 Base64。" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============ 授权绑定 ============ -->
+        <TextBlock Text="用于授权绑定" Style="{StaticResource Sample.SecTitle}" Margin="0,20,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="常见组合：机器指纹 → 摘要 → 许可串" Style="{StaticResource Sample.Kicker}"
+                   Margin="0,-9,0,10" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Padding="14,12" Margin="0,0,10,0">
+                <Border Style="{StaticResource Sample.CodeBlock}" BorderThickness="0" Background="Transparent"
+                        Padding="0">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Sample.CodeText}" Text="SystemHelper.Init();" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource Sample.Ink3}"
+                                   Text="// 机器指纹：不落盘、不外传" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}"
+                                   Text="var fingerprint = MD5Helper.Md5(" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}"
+                                   Text="    SystemHelper.HardDiskID +" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}"
+                                   Text="    SystemHelper.ServerId);" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource Sample.Ink3}"
+                                   Text="// 许可串：AES 包一层加密" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}"
+                                   Text="var license = RSAHelper.AESEncrypt(" />
+                        <TextBlock Style="{StaticResource Sample.CodeText}"
+                                   Text="    $&quot;{fingerprint}|2027-12-31&quot;, appKey);" />
+                    </StackPanel>
+                </Border>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,12">
+                <StackPanel>
+                    <TextBlock Text="许可串（本机实算）" Style="{StaticResource Sample.CardTitle}" />
+                    <TextBlock Text="MD5(&quot;WD-WCC4N2PK8412&quot; + &quot;8F3A-2C71-9D04-B6E5&quot;) → AES"
+                               Style="{StaticResource Sample.Kicker}" Margin="0,3,0,8" TextWrapping="Wrap" />
+                    <Border Background="{DynamicResource Sample.Surface2}"
+                            BorderBrush="{DynamicResource Sample.Line}" BorderThickness="1"
+                            CornerRadius="6" Padding="10,8" MinHeight="54">
+                        <TextBlock Text="{Binding License}" FontFamily="{DynamicResource Sample.MonoFontFamily}"
+                                   FontSize="12" Foreground="{DynamicResource Sample.Accent}"
+                                   TextWrapping="Wrap" />
+                    </Border>
+                    <TextBlock Style="{StaticResource Sample.Muted}" Margin="0,9,0,0"
+                               Text="指纹只在本机算、只在本机用；许可串换成真实 appKey 后可以直接贴进授权文件。" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+    </StackPanel>
+</UserControl>

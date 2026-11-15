@@ -7,7 +7,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <Platforms>AnyCPU;x64</Platforms>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <AssemblyTitle>YoYo.Toolkit 示例程序</AssemblyTitle>
+    <Product>YoYo.Toolkit</Product>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\YoYo.Toolkit\YoYo.Toolkit.csproj" />
+  </ItemGroup>
+
+  <!-- 与 PackageEasy 相同的 MVVM 骨架：Ioc.Default + ServiceCollection -->
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <Folder Include="NavigationSample\" />

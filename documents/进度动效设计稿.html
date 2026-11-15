@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>不确定进度动效 · YoYo.Toolkit 动效研究</title>
+<style>
+  :root{
+    --bg:#F2F3F4;
+    --surface:#FFFFFF;
+    --surface-2:#FAFBFB;
+    --line:rgba(15,20,22,.10);
+    --line-strong:rgba(15,20,22,.16);
+    --ink:#0F1416;
+    --ink-2:#565F63;
+    --ink-3:#8C969B;
+    --accent:#0E7C7B;
+    --accent-soft:rgba(14,124,123,.12);
+    --warn:#B4700F;
+    --ok:#2E7D53;
+    --track:rgba(15,20,22,.07);
+    --dot:rgba(15,20,22,.05);
+    --ease-out:cubic-bezier(.23,1,.32,1);
+    --ease-in-out:cubic-bezier(.77,0,.175,1);
+    --mono:"Cascadia Mono","SF Mono",Consolas,ui-monospace,"Liberation Mono",monospace;
+    --sans:"Segoe UI Variable Text","Segoe UI",-apple-system,BlinkMacSystemFont,"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;
+  }
+  [data-theme="dark"]{
+    --bg:#0D1011;
+    --surface:#161A1C;
+    --surface-2:#1A1F21;
+    --line:rgba(255,255,255,.10);
+    --line-strong:rgba(255,255,255,.18);
+    --ink:#E8ECEC;
+    --ink-2:#9AA3A7;
+    --ink-3:#6C757A;
+    --accent:#2BB3A8;
+    --accent-soft:rgba(43,179,168,.15);
+    --warn:#D99533;
+    --ok:#5BB583;
+    --track:rgba(255,255,255,.09);
+    --dot:rgba(255,255,255,.05);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 28px 64px}
+
+  /* ---- masthead ---- */
+  .masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:28px;flex-wrap:wrap;margin-bottom:36px}
+  .eyebrow{margin:0 0 10px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase}
+  h1{margin:0;font-size:34px;font-weight:680;letter-spacing:-.015em;line-height:1.1}
+  .lede{margin:14px 0 0;max-width:58ch;color:var(--ink-2);font-size:14.5px}
+  .ctrl{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+  .seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+  .seg-item{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:12.5px;padding:6px 14px;border-radius:7px;cursor:pointer;transition:color 150ms ease-out,background 150ms ease-out}
+  .seg-item[data-active]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+  .switch{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px 12px;font:inherit;font-size:12.5px;color:var(--ink-2);cursor:pointer;transition:color 150ms ease-out,border-color 150ms ease-out}
+  .switch .switch-dot{width:30px;height:17px;border-radius:999px;background:var(--track);position:relative;transition:background 160ms var(--ease-out)}
+  .switch .switch-dot::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform 180ms var(--ease-out)}
+  .switch[aria-pressed="true"] .switch-dot{background:var(--accent)}
+  .switch[aria-pressed="true"] .switch-dot::after{transform:translateX(13px)}
+
+  /* ---- group ---- */
+  .group{display:flex;align-items:baseline;gap:12px;margin:34px 0 16px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .group-k{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+  .group h2{margin:0;font-size:17px;font-weight:640;letter-spacing:.01em}
+  .group .gn{margin-left:auto;font-size:12.5px;color:var(--ink-3)}
+
+  /* ---- grid + card ---- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(440px,1fr));gap:18px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow 200ms var(--ease-out),transform 200ms var(--ease-out)}
+  @media (hover:hover) and (pointer:fine){.card:hover{box-shadow:0 10px 30px rgba(15,20,22,.07);transform:translateY(-2px)}}
+  .card-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 0}
+  .idx{font-family:var(--mono);font-size:11px;color:var(--ink-3);padding-top:3px;letter-spacing:.05em}
+  .card h3{margin:0;font-size:15px;font-weight:620;letter-spacing:.01em}
+  .sub{margin:3px 0 0;font-size:12px;color:var(--ink-3)}
+  .spec{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);border:1px solid var(--line);border-radius:6px;padding:4px 8px;white-space:nowrap;align-self:flex-start}
+  .stage{flex:1;padding:26px 22px;min-height:178px;background:var(--surface-2);background-image:radial-gradient(var(--dot) .6px,transparent .6px);background-size:13px 13px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:14px}
+  .card-foot{display:flex;align-items:center;gap:10px;padding:11px 18px;font-size:12px;color:var(--ink-2)}
+  .replay{margin-left:auto;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:inherit;font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer;transition:color 150ms ease-out,border-color 150ms ease-out}
+  @media (hover:hover) and (pointer:fine){.replay:hover{color:var(--accent);border-color:var(--accent)}}
+  .replay:active{transform:scale(.97)}
+  .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+  /* ============ 04 pipeline (保留) ============ */
+  .pipe{display:flex;align-items:flex-start;justify-content:center;width:100%}
+  .node{display:flex;flex-direction:column;align-items:center;gap:9px;width:64px;flex:0 0 auto}
+  .node-dot{width:26px;height:26px;border-radius:50%;border:1.6px solid var(--line-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink-3);position:relative;transition:border-color 200ms var(--ease-out),background 200ms var(--ease-out),color 200ms var(--ease-out)}
+  .node-dot::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:1.6px solid var(--accent);opacity:0}
+  .node[data-state="done"] .node-dot{background:var(--accent);border-color:var(--accent);color:#fff}
+  .node[data-state="active"] .node-dot{border-color:var(--accent);color:var(--accent)}
+  .node[data-state="active"] .node-dot::after{animation:pulse 1.4s var(--ease-out) infinite}
+  .node-lbl{font-size:11.5px;color:var(--ink-2);transition:color 200ms var(--ease-out)}
+  .node[data-state="done"] .node-lbl,.node[data-state="active"] .node-lbl{color:var(--ink)}
+  .node[data-state="active"] .node-lbl{font-weight:600}
+  .pipe-link{position:relative;flex:1 1 auto;height:1.6px;background:var(--track);margin-top:12px;min-width:18px}
+  .pipe-link i{position:absolute;inset:0;background:var(--accent);transform-origin:left center;transform:scaleX(0);transition:transform 500ms linear}
+  .pipe-link.on i{transform:scaleX(1)}
+  @keyframes pulse{0%{transform:scale(1);opacity:.55}70%{opacity:0}100%{transform:scale(1.7);opacity:0}}
+
+  /* ============ 05 signal (保留) ============ */
+  .signal-row{display:flex;align-items:center;justify-content:center;gap:34px;width:100%}
+  .signal{display:flex;align-items:center;gap:3px;height:58px}
+  .signal i{display:block;width:3px;height:100%;background:var(--accent);border-radius:1px;transform-origin:center;transform:scaleY(.18);animation:eq 1.05s ease-in-out infinite alternate}
+  @keyframes eq{from{transform:scaleY(.18)}to{transform:scaleY(1)}}
+  .signal-cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+  /* ============ 06 orbit (保留) ============ */
+  .orbit-row{display:flex;align-items:center;justify-content:center;gap:32px;width:100%}
+  .orbit{position:relative;width:78px;height:78px}
+  .orbit::before{content:"";position:absolute;inset:6px;border:1px dashed var(--line-strong);border-radius:50%}
+  .orbit-core{position:absolute;top:50%;left:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--accent)}
+  .orbit-arm{position:absolute;inset:0;transform:rotate(var(--a,0deg));animation:orbit var(--s,2s) linear infinite}
+  .orbit-arm i{position:absolute;top:-3px;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--accent)}
+  .orbit-arm:nth-child(3) i{width:6px;height:6px;margin-left:-3px;background:var(--warn)}
+  .orbit-arm:nth-child(4) i{width:5px;height:5px;margin-left:-2.5px;opacity:.7}
+  @keyframes orbit{to{transform:rotate(calc(var(--a,0deg) + 360deg))}}
+  .orbit-cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+  /* ============ 07 flow bar (新增) ============ */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+  .flow-track{position:relative;width:100%;max-width:320px;height:4px;background:var(--track);border-radius:3px;overflow:hidden}
+  .flow-band{position:absolute;top:0;left:0;height:100%;width:40%;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:3px;transform:translateX(-120%);animation:flow 1.4s linear infinite}
+  @keyframes flow{0%{transform:translateX(-120%)}100%{transform:translateX(360%)}}
+  .flow-cap{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+
+  /* ============ 08 indeterminate arc ring (新增) ============ */
+  .iring-wrap{display:flex;justify-content:center}
+  .iring-bg{fill:none;stroke:var(--track);stroke-width:4}
+  .iring-arc{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-dasharray:90 236.7;transform-origin:60px 60px;animation:iring 1.2s linear infinite}
+  @keyframes iring{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+
+  /* ============ 09 bounce dots (新增) ============ */
+  .bdots{display:flex;align-items:center;justify-content:center;gap:9px}
+  .bdot{width:9px;height:9px;border-radius:50%;background:var(--accent);transform:scale(.4);animation:bdot 1.2s ease-in-out infinite}
+  .bdot:nth-child(2){animation-delay:.16s}
+  .bdot:nth-child(3){animation-delay:.32s}
+  @keyframes bdot{0%,80%,100%{transform:scale(.4);opacity:.5}40%{transform:scale(1);opacity:1}}
+  .btxt{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-left:6px}
+
+  /* ============ 10 sonar (新增) ============ */
+  .sonar{position:relative;width:84px;height:84px;display:flex;align-items:center;justify-content:center}
+  .sonar-core{width:10px;height:10px;border-radius:50%;background:var(--accent);z-index:2}
+  .sonar-ring{position:absolute;inset:0;border:1.5px solid var(--accent);border-radius:50%;opacity:0;animation:sonar 2.4s var(--ease-out) infinite}
+  .sonar-ring.d2{animation-delay:1.2s}
+  @keyframes sonar{0%{transform:scale(.4);opacity:.6}80%{opacity:0}100%{transform:scale(1);opacity:0}}
+  .sonar-cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-align:center}
+
+  /* ============ 11 shimmer skeleton (新增) ============ */
+  .skel{display:flex;flex-direction:column;gap:10px;width:100%;max-width:320px;margin:0 auto}
+  .skel-line{height:12px;border-radius:4px;background:var(--track);position:relative;overflow:hidden}
+  .skel-line.short{width:60%}
+  .skel-line::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:skel 1.5s ease-in-out infinite}
+  [data-theme="dark"] .skel-line::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}
+  @keyframes skel{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+  /* ============ 12 marching ants ring (新增) ============ */
+  .mant-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+  .mant-ring{fill:none;stroke:var(--accent);stroke-width:3;stroke-dasharray:14 10;stroke-linecap:round;transform-origin:60px 60px;animation:mant 1.1s linear infinite}
+  @keyframes mant{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+  .mant-core{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--accent);opacity:.7}
+  .mant-cap{font-family:var(--mono);font-size:11px;color:var(--ink-3);text-align:center}
+
+  /* ============ 13 opposing travelers (新增) ============ */
+  .flow2{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%}
+  .flow2-track{position:relative;width:100%;max-width:320px;height:4px;background:var(--track);border-radius:3px;overflow:hidden}
+  .flow2-band{position:absolute;top:0;height:100%;width:32%;border-radius:3px;background:var(--accent);transform:translateX(-120%)}
+  .flow2-band.a{animation:flow2a 1.5s linear infinite}
+  .flow2-band.b{animation:flow2b 1.5s linear infinite}
+  @keyframes flow2a{0%{transform:translateX(-120%)}100%{transform:translateX(360%)}}
+  @keyframes flow2b{0%{transform:translateX(360%)}100%{transform:translateX(-120%)}}
+
+  /* ============ 14 typing ellipsis (新增) ============ */
+  .type{display:flex;align-items:center;justify-content:center;gap:10px}
+  .type-text{font-size:14px;color:var(--ink)}
+  .type-dots{display:inline-flex;gap:3px}
+  .type-dots i{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:0;animation:type 1.4s linear infinite}
+  .type-dots i:nth-child(2){animation-delay:.2s}
+  .type-dots i:nth-child(3){animation-delay:.4s}
+  @keyframes type{0%{opacity:0}12%{opacity:1}34%{opacity:1}46%{opacity:0}100%{opacity:0}}
+
+  /* ============ 15 tick ring (新增) ============ */
+  .tick-wrap{position:relative;width:120px;height:120px;margin:0 auto}
+  .tick-svg line{stroke:var(--ink-3);stroke-width:2;stroke-linecap:round;opacity:.4}
+  .tick-hi{transform-origin:60px 60px;animation:tickrot 1.6s linear infinite}
+  .tick-hi line{stroke:var(--accent);stroke-width:3;opacity:1}
+  @keyframes tickrot{to{transform:rotate(360deg)}}
+
+  /* ============ 16 traveling wave (新增) ============ */
+  .wave{width:100%;max-width:320px;margin:0 auto;height:60px;overflow:hidden}
+  .wave svg{display:block;width:200%;height:100%}
+  .wave path{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round}
+  .wave .scroll{animation:wavescroll 2.4s linear infinite}
+  @keyframes wavescroll{from{transform:translateX(0)}to{transform:translateX(-240px)}}
+
+  /* ============ 17 dot matrix ripple (新增) ============ */
+  .matrix{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;width:100%;max-width:200px;margin:0 auto}
+  .matrix i{width:9px;height:9px;border-radius:50%;background:var(--track);opacity:.25}
+  .matrix i.on{background:var(--accent);animation:ripple 1.8s var(--ease-out) infinite}
+  @keyframes ripple{0%{opacity:1;transform:scale(1)}60%,100%{opacity:.25;transform:scale(.8)}}
+
+  /* ============ 18 radar sweep (新增) ============ */
+  .radar{position:relative;width:120px;height:120px;margin:0 auto;border-radius:50%;border:1px solid var(--line-strong);overflow:hidden}
+  .radar-sweep{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg, var(--accent-soft) 0 42deg, transparent 42deg 360deg);transform-origin:50% 50%;animation:radar 1.8s linear infinite}
+  @keyframes radar{to{transform:rotate(360deg)}}
+  .radar-core{position:absolute;top:50%;left:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--accent)}
+
+  /* ============ 19 对流双环 (好看) ============ */
+  .dual{position:relative;width:110px;height:110px;margin:0 auto}
+  .dual i{position:absolute;inset:0;border-radius:50%;border:3px solid transparent}
+  .dual .r1{border-top-color:var(--accent);border-right-color:var(--accent);animation:spin 1.4s linear infinite}
+  .dual .r2{border-bottom-color:var(--warn);border-left-color:var(--warn);inset:13px;animation:spin 1.9s linear infinite reverse}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ============ 20 流星尾迹 (好看) ============ */
+  .comet{position:relative;width:96px;height:96px;margin:0 auto}
+  .comet-arm{position:absolute;inset:0;animation:spin 1.6s linear infinite}
+  .comet-arm i{position:absolute;top:50%;left:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:var(--accent)}
+
+  /* ============ 21 呼吸光球 (好看) ============ */
+  .orb{width:80px;height:80px;border-radius:50%;margin:0 auto;background:radial-gradient(circle at 40% 36%, rgba(255,255,255,.5), var(--accent) 70%);animation:breathe 2.6s var(--ease-in-out) infinite}
+  @keyframes breathe{0%,100%{transform:scale(.84);opacity:.72}50%{transform:scale(1.06);opacity:1}}
+
+  /* ============ 22 屏幕扫描 (好看) ============ */
+  .scan{position:relative;width:150px;height:96px;border-radius:10px;margin:0 auto;background:var(--track);border:1px solid var(--line);overflow:hidden}
+  .scan-line{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);box-shadow:0 0 12px 2px var(--accent-soft);animation:scanmove 2s var(--ease-in-out) infinite}
+  @keyframes scanmove{0%{transform:translateY(2px)}100%{transform:translateY(92px)}}
+
+  /* ============ 23 花瓣绽放 (好看) ============ */
+  .petal{position:relative;width:84px;height:84px;margin:0 auto}
+  .petal .flower{position:absolute;inset:0;animation:spin 4s linear infinite}
+  .petal i{position:absolute;top:8px;left:50%;width:13px;height:34px;margin-left:-6.5px;transform-origin:50% 100%}
+  .petal b{display:block;width:100%;height:100%;background:var(--accent);border-radius:50% 50% 50% 50%/62% 62% 38% 38%;transform-origin:50% 100%;animation:bloom 1.8s var(--ease-in-out) infinite}
+  @keyframes bloom{0%,100%{transform:scaleY(.42)}50%{transform:scaleY(1)}}
+
+  /* ============ 24 流光环 (好看) ============ */
+  .fring{position:relative;width:108px;height:108px;margin:0 auto;border-radius:50%;border:3px solid var(--track)}
+  .fring-spin{position:absolute;inset:-3px;border-radius:50%;background:conic-gradient(from 0deg, transparent 0 312deg, var(--accent) 356deg, transparent 360deg);-webkit-mask:radial-gradient(transparent 52%, #000 53%);mask:radial-gradient(transparent 52%, #000 53%);animation:spin 1.5s linear infinite}
+
+  /* ---- footer ---- */
+  .foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-2);font-size:12.5px}
+  .foot code{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--ink)}
+  .foot .small{margin-top:8px;color:var(--ink-3)}
+
+  /* ---- reduced motion ---- */
+  @media (prefers-reduced-motion: reduce){
+    .signal i,.orbit-arm,.node[data-state="active"] .node-dot::after,.flow-band,.iring-arc,.bdot,.sonar-ring,.skel-line::after,.mant-ring,
+    .flow2-band,.type-dots i,.tick-hi,.wave .scroll,.matrix i.on,.radar-sweep,
+    .dual i,.comet-arm,.orb,.scan-line,.petal .flower,.petal b,.fring-spin{animation:none!important}
+    .flow-band{transform:translateX(80%)}
+    .bdot{transform:scale(.7);opacity:.8}
+    .sonar-ring{opacity:.25;transform:scale(.8)}
+    .orb{transform:scale(1);opacity:.9}
+    .scan-line{transform:translateY(46px)}
+  }
+  body[data-reduce="on"] .signal i,
+  body[data-reduce="on"] .orbit-arm,
+  body[data-reduce="on"] .node[data-state="active"] .node-dot::after,
+  body[data-reduce="on"] .flow-band,
+  body[data-reduce="on"] .iring-arc,
+  body[data-reduce="on"] .bdot,
+  body[data-reduce="on"] .sonar-ring,
+  body[data-reduce="on"] .skel-line::after,
+  body[data-reduce="on"] .mant-ring,
+  body[data-reduce="on"] .flow2-band,
+  body[data-reduce="on"] .type-dots i,
+  body[data-reduce="on"] .tick-hi,
+  body[data-reduce="on"] .wave .scroll,
+  body[data-reduce="on"] .matrix i.on,
+  body[data-reduce="on"] .radar-sweep,
+  body[data-reduce="on"] .dual i,
+  body[data-reduce="on"] .comet-arm,
+  body[data-reduce="on"] .orb,
+  body[data-reduce="on"] .scan-line,
+  body[data-reduce="on"] .petal .flower,
+  body[data-reduce="on"] .petal b,
+  body[data-reduce="on"] .fring-spin{animation:none!important}
+  body[data-reduce="on"] .flow-band{transform:translateX(80%)}
+  body[data-reduce="on"] .bdot{transform:scale(.7);opacity:.8}
+  body[data-reduce="on"] .sonar-ring{opacity:.25;transform:scale(.8)}
+  body[data-reduce="on"] .orb{transform:scale(1);opacity:.9}
+  body[data-reduce="on"] .scan-line{transform:translateY(46px)}
+  body[data-reduce="on"] .card,.card *{transition:none!important}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">YoYo.Toolkit · 动效研究 / Motion Study</p>
+        <h1>不确定进度动效</h1>
+        <p class="lede">面向仪器与上位机界面的「未知时长」反馈：不谎报进度，只给出「仍在运行」的证据。下方保留你指定的 3 例，并扩充 6 例互不相同的不确定进度表达。全部仅驱动 transform / opacity，恒定运动用 linear。</p>
+      </div>
+      <div class="ctrl">
+        <div class="seg" role="group" aria-label="主题">
+          <button class="seg-item" data-theme-btn="light" data-active>浅色</button>
+          <button class="seg-item" data-theme-btn="dark">深色</button>
+        </div>
+        <button class="switch" data-reduce aria-pressed="false"><span class="switch-dot"></span>减少动效</button>
+      </div>
+    </header>
+
+    <!-- 保留 -->
+    <div class="group">
+      <span class="group-k">KEEP</span><h2>保留 · 4 / 5 / 6</h2><span class="gn">你指定的三例</span>
+    </div>
+    <div class="grid">
+
+      <!-- 04 -->
+      <article class="card" data-card data-kind="js">
+        <div class="card-head">
+          <span class="idx">04</span>
+          <div><h3>步骤管线</h3><p class="sub">多阶段流程</p></div>
+          <span class="spec">pulse 1.4s · link 500ms</span>
+        </div>
+        <div class="stage">
+          <div class="pipe" data-pipe>
+            <div class="node" data-state="done"><span class="node-dot">✓</span><span class="node-lbl">初始化</span></div>
+            <div class="pipe-link"><i></i></div>
+            <div class="node" data-state="active"><span class="node-dot">2</span><span class="node-lbl">预热</span></div>
+            <div class="pipe-link"><i></i></div>
+            <div class="node" data-state="todo"><span class="node-dot">3</span><span class="node-lbl">采集</span></div>
+            <div class="pipe-link"><i></i></div>
+            <div class="node" data-state="todo"><span class="node-dot">4</span><span class="node-lbl">分析</span></div>
+          </div>
+        </div>
+        <div class="card-foot">场景：运行流程、校准向导 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 05 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">05</span>
+          <div><h3>信号带</h3><p class="sub">活跃 / 搜索中</p></div>
+          <span class="spec">eq 1.05s · alt</span>
+        </div>
+        <div class="stage">
+          <div class="signal-row">
+            <div class="signal" data-signal></div>
+            <span class="signal-cap">搜索设备中…</span>
+          </div>
+        </div>
+        <div class="card-foot">场景：扫描、握手等待 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 06 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">06</span>
+          <div><h3>轨道点</h3><p class="sub">连接 / 同步</p></div>
+          <span class="spec">linear · 1.9/2.7/3.5s</span>
+        </div>
+        <div class="stage">
+          <div class="orbit-row">
+            <div class="orbit" data-orbit>
+              <span class="orbit-core"></span>
+              <span class="orbit-arm" style="--s:1.9s;--a:0deg" data-loop><i></i></span>
+              <span class="orbit-arm" style="--s:2.7s;--a:130deg" data-loop><i></i></span>
+              <span class="orbit-arm" style="--s:3.5s;--a:250deg" data-loop><i></i></span>
+            </div>
+            <span class="orbit-cap">正在连接<br>SN-2026-0417</span>
+          </div>
+        </div>
+        <div class="card-foot">场景：设备握手、云端同步 <button class="replay">重播</button></div>
+      </article>
+    </div>
+
+    <!-- 新增不确定 -->
+    <div class="group">
+      <span class="group-k">+</span><h2>更多不确定进度</h2><span class="gn">六种不同「进行中」表达</span>
+    </div>
+    <div class="grid">
+
+      <!-- 07 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">07</span>
+          <div><h3>流动扫光条</h3><p class="sub">线性掠过</p></div>
+          <span class="spec">linear · 1.4s</span>
+        </div>
+        <div class="stage">
+          <div class="flow"><div class="flow-track"><div class="flow-band" data-loop></div></div><span class="flow-cap">加载配置…</span></div>
+        </div>
+        <div class="card-foot">场景：读取、解析、等待响应 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 08 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">08</span>
+          <div><h3>旋转弧环</h3><p class="sub">TProgressRing 不确定态</p></div>
+          <span class="spec">linear · 1.2s</span>
+        </div>
+        <div class="stage">
+          <div class="iring-wrap"><svg class="iring" viewBox="0 0 120 120" width="120" height="120"><circle cx="60" cy="60" r="52" class="iring-bg"></circle><circle cx="60" cy="60" r="52" class="iring-arc" data-loop></circle></svg></div>
+        </div>
+        <div class="card-foot">场景：启动、后台任务（对应现有控件） <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 09 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">09</span>
+          <div><h3>三点脉动</h3><p class="sub">序列化缩放</p></div>
+          <span class="spec">ease-in-out · 1.2s</span>
+        </div>
+        <div class="stage">
+          <div class="bdots"><span class="bdot" data-loop></span><span class="bdot" data-loop></span><span class="bdot" data-loop></span><span class="btxt">处理中</span></div>
+        </div>
+        <div class="card-foot">场景：行内「处理中」、按钮旁状态 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 10 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">10</span>
+          <div><h3>声纳波纹</h3><p class="sub">同心扩散</p></div>
+          <span class="spec">ease-out · 2.4s</span>
+        </div>
+        <div class="stage">
+          <div class="sonar"><span class="sonar-core"></span><span class="sonar-ring" data-loop></span><span class="sonar-ring d2" data-loop></span></div>
+          <span class="sonar-cap">扫描中 · 范围 0–5 m</span>
+        </div>
+        <div class="card-foot">场景：雷达、探测、范围扫描 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 11 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">11</span>
+          <div><h3>骨架扫光</h3><p class="sub">内容占位</p></div>
+          <span class="spec">ease-in-out · 1.5s</span>
+        </div>
+        <div class="stage">
+          <div class="skel"><div class="skel-line" data-loop></div><div class="skel-line short" data-loop></div><div class="skel-line" data-loop></div></div>
+        </div>
+        <div class="card-foot">场景：列表/报表加载占位 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 12 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">12</span>
+          <div><h3>行进虚线环</h3><p class="sub">虚线旋转</p></div>
+          <span class="spec">linear · 1.1s</span>
+        </div>
+        <div class="stage">
+          <div class="mant-wrap"><svg class="mant" viewBox="0 0 120 120" width="108" height="108"><circle cx="60" cy="60" r="52" class="mant-ring" data-loop></circle></svg><span class="mant-core"></span></div>
+          <span class="mant-cap">连接中</span>
+        </div>
+        <div class="card-foot">场景：网络握手、会话保持 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 13 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">13</span>
+          <div><h3>对向游走</h3><p class="sub">双向对流</p></div>
+          <span class="spec">linear · 1.5s</span>
+        </div>
+        <div class="stage">
+          <div class="flow2"><div class="flow2-track"><div class="flow2-band a" data-loop></div><div class="flow2-band b" data-loop></div></div><span class="flow-cap">同步数据中…</span></div>
+        </div>
+        <div class="card-foot">场景：双向缓冲、收发并行 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 14 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">14</span>
+          <div><h3>打字省略号</h3><p class="sub">文本指示</p></div>
+          <span class="spec">linear · 1.4s</span>
+        </div>
+        <div class="stage">
+          <div class="type"><span class="type-text">分析样本</span><span class="type-dots"><i data-loop></i><i data-loop></i><i data-loop></i></span></div>
+        </div>
+        <div class="card-foot">场景：文案态「分析中…」 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 15 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">15</span>
+          <div><h3>刻度游标环</h3><p class="sub">表盘指针</p></div>
+          <span class="spec">linear · 1.6s</span>
+        </div>
+        <div class="stage">
+          <div class="tick-wrap"><svg class="tick-svg" data-tick viewBox="0 0 120 120" width="120" height="120"><g class="tick-hi" data-loop></g></svg></div>
+        </div>
+        <div class="card-foot">场景：旋钮/仪表盘等待 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 16 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">16</span>
+          <div><h3>行波线</h3><p class="sub">连续波形</p></div>
+          <span class="spec">linear · 2.4s</span>
+        </div>
+        <div class="stage">
+          <div class="wave"><svg viewBox="0 0 320 60" width="640" height="60" preserveAspectRatio="none"><g class="scroll" data-loop><path d="M0,30 C40,2 80,58 120,30 C160,2 200,58 240,30 C280,2 320,58 360,30 C400,2 440,58 480,30 C520,2 560,58 600,30 C640,2 680,58 720,30"/></g></svg></div>
+        </div>
+        <div class="card-foot">场景：信号/液位/波形监测 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 17 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">17</span>
+          <div><h3>点阵涟漪</h3><p class="sub">矩阵扩散</p></div>
+          <span class="spec">ease-out · 1.8s</span>
+        </div>
+        <div class="stage">
+          <div class="matrix" data-matrix></div>
+        </div>
+        <div class="card-foot">场景：区域扫描、阵列忙 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 18 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">18</span>
+          <div><h3>雷达扫描臂</h3><p class="sub">旋转扇形</p></div>
+          <span class="spec">linear · 1.8s</span>
+        </div>
+        <div class="stage">
+          <div class="radar"><div class="radar-sweep" data-loop></div><span class="radar-core"></span></div>
+        </div>
+        <div class="card-foot">场景：雷达、信道扫描 <button class="replay">重播</button></div>
+      </article>
+    </div>
+
+    <!-- 好看的指示器 -->
+    <div class="group">
+      <span class="group-k">★</span><h2>好看的指示器</h2><span class="gn">六种更精致的等待表达</span>
+    </div>
+    <div class="grid">
+
+      <!-- 19 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">19</span>
+          <div><h3>对流双环</h3><p class="sub">双色逆向</p></div>
+          <span class="spec">linear · 1.4/1.9s</span>
+        </div>
+        <div class="stage"><div class="dual"><i class="r1" data-loop></i><i class="r2" data-loop></i></div></div>
+        <div class="card-foot">场景：精致加载、品牌等待 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 20 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">20</span>
+          <div><h3>流星尾迹</h3><p class="sub">带拖尾的轨迹</p></div>
+          <span class="spec">linear · 1.6s</span>
+        </div>
+        <div class="stage"><div class="comet" data-comet></div></div>
+        <div class="card-foot">场景：连接、运转动效 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 21 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">21</span>
+          <div><h3>呼吸光球</h3><p class="sub">柔和涨落</p></div>
+          <span class="spec">ease-in-out · 2.6s</span>
+        </div>
+        <div class="stage"><div class="orb" data-loop></div></div>
+        <div class="card-foot">场景：待机、轻量等待 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 22 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">22</span>
+          <div><h3>屏幕扫描</h3><p class="sub">发光扫描线</p></div>
+          <span class="spec">ease-in-out · 2s</span>
+        </div>
+        <div class="stage"><div class="scan"><div class="scan-line" data-loop></div></div></div>
+        <div class="card-foot">场景：检测、监控面板 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 23 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">23</span>
+          <div><h3>花瓣绽放</h3><p class="sub">五瓣旋转</p></div>
+          <span class="spec">spin 4s · bloom 1.8s</span>
+        </div>
+        <div class="stage"><div class="petal" data-petal></div></div>
+        <div class="card-foot">场景：创意/品牌加载 <button class="replay">重播</button></div>
+      </article>
+
+      <!-- 24 -->
+      <article class="card" data-card data-kind="css">
+        <div class="card-head">
+          <span class="idx">24</span>
+          <div><h3>流光环</h3><p class="sub">彗尾环</p></div>
+          <span class="spec">linear · 1.5s</span>
+        </div>
+        <div class="stage"><div class="fring"><div class="fring-spin" data-loop></div></div></div>
+        <div class="card-foot">场景：高级加载、进度环 <button class="replay">重播</button></div>
+      </article>
+    </div>
+
+    <footer class="foot">
+      <p>所有动效只驱动 <code>transform</code> 与 <code>opacity</code>；恒定运动（扫光、旋转、扫描）一律 <code>linear</code>，序列化脉动用 <code>ease-in-out</code>。不确定进度不展示百分比，避免谎报；切换「减少动效」可查看无障碍降级态。</p>
+      <p class="small mono">点击任意卡片或「重播」可重放该例 · 按 R 全部重放</p>
+    </footer>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.documentElement, body=document.body;
+  var prefersReduce=window.matchMedia("(prefers-reduced-motion: reduce)");
+  var forceReduce=false, timers=[];
+  function clearTimers(){ for(var i=0;i<timers.length;i++){ clearInterval(timers[i]); clearTimeout(timers[i]); } timers=[]; }
+  function interval(ms,fn){ var id=setInterval(fn,ms); timers.push(id); return id; }
+  function reduced(){ return forceReduce || prefersReduce.matches; }
+
+  /* 05 signal bars (保留) */
+  var signal=document.querySelector("[data-signal]");
+  for(var s=0;s<28;s++){ var b=document.createElement("i"); b.setAttribute("data-loop",""); b.style.animationDelay=(-(Math.random()*1.05)).toFixed(2)+"s"; b.style.transform="scaleY("+(0.18+(s%5)/5*0.82).toFixed(2)+")"; signal.appendChild(b); }
+
+  /* 15 tick ring (新增)：24 静态刻度 + 旋转高亮指针 */
+  var SVGNS="http://www.w3.org/2000/svg";
+  var tickSvg=document.querySelector("[data-tick]");
+  if(tickSvg){
+    var tc=60, tr=46;
+    var base=document.createElementNS(SVGNS,"g");
+    for(var t=0;t<24;t++){
+      var a=t/24*2*Math.PI;
+      var ln=document.createElementNS(SVGNS,"line");
+      ln.setAttribute("x1",(tc+tr*Math.sin(a)).toFixed(2));
+      ln.setAttribute("y1",(tc-tr*Math.cos(a)).toFixed(2));
+      ln.setAttribute("x2",(tc+(tr-8)*Math.sin(a)).toFixed(2));
+      ln.setAttribute("y2",(tc-(tr-8)*Math.cos(a)).toFixed(2));
+      base.appendChild(ln);
+    }
+    tickSvg.appendChild(base);
+    var hi=document.querySelector(".tick-hi");
+    var hl=document.createElementNS(SVGNS,"line");
+    hl.setAttribute("x1",tc); hl.setAttribute("y1",tc-tr); hl.setAttribute("x2",tc); hl.setAttribute("y2",tc-(tr-9));
+    hi.appendChild(hl);
+  }
+
+  /* 17 dot matrix (新增)：9×9 圆点，按到中心的曼哈顿距离错相位 */
+  var matrix=document.querySelector("[data-matrix]");
+  if(matrix){
+    var MN=9, mc=(MN-1)/2;
+    for(var my=0;my<MN;my++) for(var mx=0;mx<MN;mx++){
+      var dot=document.createElement("i");
+      dot.setAttribute("data-loop","");
+      dot.className="on";
+      var dist=Math.hypot(mx-mc,my-mc);
+      dot.style.animationDelay=(dist*0.07).toFixed(2)+"s";
+      matrix.appendChild(dot);
+    }
+  }
+
+  /* 20 comet (好看)：旋转臂 + 渐隐拖尾 */
+  var comet=document.querySelector("[data-comet]");
+  if(comet){
+    var arm=document.createElement("span");
+    arm.className="comet-arm"; arm.setAttribute("data-loop","");
+    for(var k=0;k<6;k++){
+      var cd=document.createElement("i");
+      cd.style.transform="rotate("+(-k*7)+"deg) translateY(-44px)";
+      cd.style.opacity=(1-k/6).toFixed(2);
+      arm.appendChild(cd);
+    }
+    comet.appendChild(arm);
+  }
+
+  /* 23 petal (好看)：五瓣 + 逐瓣绽放 */
+  var petal=document.querySelector("[data-petal]");
+  if(petal){
+    var flower=document.createElement("span");
+    flower.className="flower"; flower.setAttribute("data-loop","");
+    for(var p=0;p<5;p++){
+      var pe=document.createElement("i");
+      pe.style.transform="rotate("+(p*72)+"deg)";
+      var pb=document.createElement("b");
+      pb.setAttribute("data-loop","");
+      pb.style.animationDelay=(p*0.18).toFixed(2)+"s";
+      pe.appendChild(pb);
+      flower.appendChild(pe);
+    }
+    petal.appendChild(flower);
+  }
+
+  /* 04 pipeline (保留) */
+  var pipe=document.querySelector("[data-pipe]");
+  var nodes=[].slice.call(pipe.querySelectorAll(".node"));
+  var links=[].slice.call(pipe.querySelectorAll(".pipe-link"));
+  function pipeRender(active){
+    nodes.forEach(function(n,i){
+      n.classList.remove("done","active","todo");
+      if(i<active){ n.setAttribute("data-state","done"); n.querySelector(".node-dot").textContent="✓"; }
+      else if(i===active){ n.setAttribute("data-state","active"); n.querySelector(".node-dot").textContent=(i+1); }
+      else { n.setAttribute("data-state","todo"); n.querySelector(".node-dot").textContent=(i+1); }
+    });
+    links.forEach(function(l,i){ l.classList.toggle("on", i<active); });
+  }
+  function demoPipe(){
+    clearTimers();
+    pipeRender(0);
+    if(reduced()){ pipeRender(2); return; }
+    var cur=0;
+    interval(1050,function(){
+      cur++;
+      if(cur>nodes.length){ cur=0; pipeRender(0); return; }
+      pipeRender(cur);
+    });
+  }
+
+  /* 通用：重放 CSS 动画 */
+  function restartAnim(card){
+    card.querySelectorAll("[data-loop]").forEach(function(el){
+      var a=el.style.animation; el.style.animation="none"; void el.offsetWidth; el.style.animation=a;
+    });
+  }
+  function replayCard(card){
+    if(card.getAttribute("data-kind")==="js"){ demoPipe(); }
+    else { restartAnim(card); }
+  }
+
+  [].slice.call(document.querySelectorAll("[data-card]")).forEach(function(card){
+    card.addEventListener("click",function(e){ if(e.target.closest(".replay")) return; replayCard(card); });
+    var rb=card.querySelector(".replay");
+    if(rb) rb.addEventListener("click",function(e){ e.stopPropagation(); replayCard(card); });
+  });
+
+  document.addEventListener("keydown",function(e){
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    if(e.key==="r"||e.key==="R"){ demoPipe(); document.querySelectorAll("[data-card][data-kind='css']").forEach(restartAnim); }
+  });
+
+  /* 主题 + 减少动效 */
+  [].slice.call(document.querySelectorAll("[data-theme-btn]")).forEach(function(b){
+    b.addEventListener("click",function(){
+      root.setAttribute("data-theme", b.getAttribute("data-theme-btn")==="dark"?"dark":"light");
+      [].slice.call(document.querySelectorAll("[data-theme-btn]")).forEach(function(x){ x.removeAttribute("data-active"); });
+      b.setAttribute("data-active","");
+    });
+  });
+  var reduceBtn=document.querySelector("[data-reduce]");
+  reduceBtn.addEventListener("click",function(){
+    forceReduce=!forceReduce;
+    body.setAttribute("data-reduce", forceReduce?"on":"off");
+    reduceBtn.setAttribute("aria-pressed", forceReduce?"true":"false");
+    demoPipe();
+  });
+
+  demoPipe();
+})();
+</script>
+</body>
+</html>

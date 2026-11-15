@@ -220,11 +220,10 @@ namespace YoYo.Toolkit.Controls.ComboBox
 
         private void SetText(ITreeModel treeModel)
         {
-            IsDorpDown = false;
-            if (Text != treeModel.DisplayName)
-            {
-                Text = treeModel.DisplayName;
-            }
+            // SetCurrentValue 而不是 SetValue：宿主常用 TwoWay 把 IsDorpDown 绑到 Popup.IsOpen，
+            // 直接 SetValue 会把绑定冲掉，收起一次之后下拉就再也打不开了。
+            SetCurrentValue(IsDorpDownProperty, false);
+            SetCurrentValue(TextProperty, treeModel.DisplayName);
         }
     }
 }

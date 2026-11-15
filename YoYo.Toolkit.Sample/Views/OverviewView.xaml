@@ -1,0 +1,286 @@
+﻿<UserControl x:Class="YoYo.ToolkitSample.Views.OverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:YoYo.ToolkitSample.Converters"
+             FontFamily="{DynamicResource Sample.FontFamily}"
+             TextOptions.TextFormattingMode="Ideal"
+             UseLayoutRounding="True">
+
+    <UserControl.Resources>
+        <conv:ResourceKeyToGeometryConverter x:Key="IconKey" />
+    </UserControl.Resources>
+
+    <StackPanel>
+
+        <!-- ============ Hero ============ -->
+        <Border Style="{StaticResource Sample.Card}" Padding="22,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="WPF · 无 MVVM 框架依赖 · 按块取用" Style="{StaticResource Sample.Kicker}" />
+                    <TextBlock Text="示例程序本身，就是一次导航演示" Style="{StaticResource Sample.Title}"
+                               Margin="0,7,0,0" />
+                    <TextBlock Style="{StaticResource Sample.Body}" Margin="0,8,0,0" MaxWidth="620"
+                               HorizontalAlignment="Left"
+                               Text="八个模块各占一页，切换全部由 BaseNavigation.GoTo 驱动：离开时旧 ViewModel 收到 NavigateOut，进入时新 ViewModel 收到 NavigateIn&lt;T&gt;，视图实例由宿主 IGetService 提供。左侧导航里每一行，都对应一个 NavigateModel。" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                        <Button Style="{StaticResource Sample.Btn.Primary}"
+                                Command="{Binding NavigateCommand}" CommandParameter="NavigationView">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Data="{StaticResource Icon.Route}" Width="13" Height="13" Stretch="Uniform"
+                                      Stroke="White" StrokeThickness="1.7" VerticalAlignment="Center"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                <TextBlock Text="看导航怎么接线" Margin="7,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Sample.Btn}" Margin="8,0,0,0"
+                                Command="{Binding NavigateCommand}" CommandParameter="ProgressView"
+                                Content="看 20 种动效" />
+                        <Button Style="{StaticResource Sample.Btn}" Margin="8,0,0,0"
+                                Command="{Binding NavigateCommand}" CommandParameter="NotifiesView"
+                                Content="看消息框" />
+                    </StackPanel>
+                </StackPanel>
+
+                <UniformGrid Grid.Column="1" Rows="2" Columns="2" Margin="26,0,0,0" VerticalAlignment="Center">
+                    <StackPanel Margin="0,0,20,12">
+                        <TextBlock Text="{Binding SourceFileCount}" FontSize="28" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="源文件" Style="{StaticResource Sample.Kicker}" Margin="0,1,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="{Binding PublicTypeCount}" FontSize="28" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="公开类型" Style="{StaticResource Sample.Kicker}" Margin="0,1,0,0" />
+                    </StackPanel>
+                    <StackPanel Margin="0,0,20,0">
+                        <TextBlock Text="{Binding MotionCount}" FontSize="28" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Sample.Accent}" />
+                        <TextBlock Text="不确定动效" Style="{StaticResource Sample.Kicker}" Margin="0,1,0,0" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="{Binding DependencyCount}" FontSize="28" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Sample.Ok}" />
+                        <TextBlock Text="三方依赖" Style="{StaticResource Sample.Kicker}" Margin="0,1,0,0" />
+                    </StackPanel>
+                </UniformGrid>
+            </Grid>
+        </Border>
+
+        <!-- ============ 模块索引 ============ -->
+        <TextBlock Text="模块索引" Style="{StaticResource Sample.SecTitle}" Margin="0,22,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+        <TextBlock Text="8 NavigateModel · 点击进入" Style="{StaticResource Sample.Kicker}" Margin="0,-9,0,10" />
+
+        <ItemsControl ItemsSource="{Binding Modules}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="4" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button Style="{StaticResource Sample.Btn}" Height="98" Margin="0,0,10,10"
+                            Padding="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                            Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding ViewType}">
+                        <Border Padding="12,10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Grid Grid.Row="0">
+                                    <TextBlock Text="{Binding Index}" Style="{StaticResource Sample.Kicker}"
+                                               Foreground="{DynamicResource Sample.Accent}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding ViewType}" HorizontalAlignment="Right"
+                                               Style="{StaticResource Sample.Kicker}" />
+                                </Grid>
+
+                                <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                        <Path Data="{Binding IconKey, Converter={StaticResource IconKey}}"
+                                              Width="13" Height="13" Stretch="Uniform"
+                                              Stroke="{DynamicResource Sample.Accent}" StrokeThickness="1.6"
+                                              VerticalAlignment="Center"
+                                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                                        <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource Sample.Ink}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}" Style="{StaticResource Sample.Muted}"
+                                               MaxHeight="34" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- ============ 接线 ============ -->
+        <TextBlock Text="接线" Style="{StaticResource Sample.SecTitle}" Margin="0,12,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.35*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource Sample.Card}" Margin="0,0,10,0" Padding="14,12">
+                <StackPanel>
+                    <Grid Margin="0,0,0,8">
+                        <TextBlock Text="MainNavigation : BaseNavigation" FontFamily="{DynamicResource Sample.MonoFontFamily}"
+                                   FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="C#" HorizontalAlignment="Right" Style="{StaticResource Sample.Kicker}"
+                                   Foreground="{DynamicResource Sample.Accent}" />
+                    </Grid>
+                    <Border Style="{StaticResource Sample.CodeBlock}">
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Foreground="{DynamicResource Sample.Ink3}"
+                                       Text="// 1. 页面登记表：ViewType 即 GoTo 的 key" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="public sealed class MainNavigation" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    : BaseNavigation" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="{}{" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    public override List&lt;NavigateModel&gt; Navigates" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="        =&gt; _navigates ??= Build();" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="    public override void InitView() { }" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Text="}" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}" Margin="0,6,0,0"
+                                       Text="navigation.GoTo(&quot;ProgressView&quot;);" />
+                            <TextBlock Style="{StaticResource Sample.CodeText}"
+                                       Text="navigation.GoTo(&quot;DeviceView&quot;, &quot;SN-0001&quot;);" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource Sample.Card}" Padding="14,12">
+                <StackPanel>
+                    <TextBlock Text="三条约定" Style="{StaticResource Sample.CardTitle}" Margin="0,0,0,8" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,9">
+                        <TextBlock Text="01" FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="12"
+                                   Foreground="{DynamicResource Sample.Accent}" Width="22" Margin="0,1,0,0" />
+                        <StackPanel Width="260">
+                            <TextBlock Text="ViewType 是唯一 key" FontSize="13.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="字符串匹配 Navigates，找不到返回 null，不抛异常。"
+                                       Style="{StaticResource Sample.Muted}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,9">
+                        <TextBlock Text="02" FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="12"
+                                   Foreground="{DynamicResource Sample.Accent}" Width="22" Margin="0,1,0,0" />
+                        <StackPanel Width="260">
+                            <TextBlock Text="ViewModel 决定收不收参数" FontSize="13.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="INavigateIn 收无参，INavigateIn&lt;T&gt; 收参数，GoTo 里自动识别。"
+                                       Style="{StaticResource Sample.Muted}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="03" FontFamily="{DynamicResource Sample.MonoFontFamily}" FontSize="12"
+                                   Foreground="{DynamicResource Sample.Accent}" Width="22" Margin="0,1,0,0" />
+                        <StackPanel Width="260">
+                            <TextBlock Text="离开即释放" FontSize="13.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Sample.Ink}" />
+                            <TextBlock Text="旧视图 DataContext 实现 INavigateOut 时先回调再换视图。"
+                                       Style="{StaticResource Sample.Muted}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ============ 设计令牌 ============ -->
+        <TextBlock Text="设计令牌" Style="{StaticResource Sample.SecTitle}" Margin="0,20,0,0" />
+        <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,0,0,1" Margin="0,7,0,11"
+                Height="1" />
+
+        <Border Style="{StaticResource Sample.Card}" Padding="14,12">
+            <StackPanel>
+                <WrapPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Accent}" />
+                        <TextBlock Text="Accent" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#0E7C7B" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="Ink" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#0F1416" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Ink2}" />
+                        <TextBlock Text="InkSecondary" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#565F63" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Ink3}" />
+                        <TextBlock Text="InkDim" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#8C969B" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Surface}"
+                                BorderBrush="{DynamicResource Sample.LineStrong}" BorderThickness="1" />
+                        <TextBlock Text="Surface" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#FFFFFF" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Ok}" />
+                        <TextBlock Text="Success" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#2E7D53" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Warn}" />
+                        <TextBlock Text="Warning" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#A9690D" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                    <StackPanel Width="104" Margin="0,0,0,10">
+                        <Border Height="26" CornerRadius="5" Background="{DynamicResource Sample.Err}" />
+                        <TextBlock Text="Error" FontSize="12.5" FontWeight="SemiBold" Margin="0,5,0,0"
+                                   Foreground="{DynamicResource Sample.Ink}" />
+                        <TextBlock Text="#B3372C" Style="{StaticResource Sample.Kicker}" />
+                    </StackPanel>
+                </WrapPanel>
+
+                <Border BorderBrush="{DynamicResource Sample.Line}" BorderThickness="0,1,0,0" Margin="0,2,0,9" />
+
+                <WrapPanel>
+                    <TextBlock Text="正文 13 / 1.6" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                    <TextBlock Text="页标题 19 / 640" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                    <TextBlock Text="卡片标题 12.5 / 640" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                    <TextBlock Text="键名 10 mono" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                    <TextBlock Text="圆角 9 / 6" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                    <TextBlock Text="栅格 13px gap" Style="{StaticResource Sample.Kicker}" Margin="0,0,20,4" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

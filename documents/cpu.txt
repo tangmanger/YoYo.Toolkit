@@ -1,0 +1,9 @@
+WPF 渲染层级: Tier 2 (硬件加速), 逻辑核: 12
+控件数: 6 × 140px, 阵列绘制 (Signal / TickRing / Wave / DotMatrix / Comet / MarchingRing)
+
+静止基线 : CPU 0.234s / 1.52s = 单核 15.40%
+动画运行 : CPU 0.766s / 4.01s = 单核 19.08%
+动画净开销: 单核 3.68%，单控件 0.61%
+整机占用 : 1.59%
+
+验收线(单控件单核 < 2%): PASS

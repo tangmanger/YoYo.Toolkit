@@ -1,5 +1,0 @@
-系统: 10.0.26100.0 (build 26100), 支持 DWM 圆角: True
-DWMWA_WINDOW_CORNER_PREFERENCE: hr=0x00000000 value=2 (DWMWCP_ROUND)
-DWMWA_CLOAKED: 0
-WS_EX_LAYERED: False（分层窗口没有系统阴影）
-WS_THICKFRAME: True（保留系统可缩放边框，DWM 才会绘制窗口阴影）

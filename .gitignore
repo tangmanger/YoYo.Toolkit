@@ -39,3 +39,6 @@ artifacts/
 
 #工作区本地数据
 .workbuddy/
+
+# Local design drafts (not tracked)
+documents/

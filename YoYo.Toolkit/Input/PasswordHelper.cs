@@ -11,6 +11,13 @@ using System.Windows.Media;
 
 namespace YoYo.Toolkit.Input
 {
+    public enum OSKType
+    {
+        None,
+        OSK,
+        TabTip
+    }
+
     public static class PasswordHelper
     {
         public static readonly DependencyProperty PasswordProperty =
@@ -25,6 +32,26 @@ namespace YoYo.Toolkit.Input
         private static readonly DependencyProperty IsUpdatingProperty =
            DependencyProperty.RegisterAttached("IsUpdating", typeof(bool),
            typeof(PasswordHelper));
+
+
+
+
+
+
+        public static OSKType GetOskType(DependencyObject obj)
+        {
+            return (OSKType)obj.GetValue(OskTypeProperty);
+        }
+
+        public static void SetOskType(DependencyObject obj, OSKType value)
+        {
+            obj.SetValue(OskTypeProperty, value);
+        }
+
+        // Using a DependencyProperty as the backing store for OskType.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty OskTypeProperty =
+            DependencyProperty.RegisterAttached("OskType", typeof(OSKType), typeof(PasswordHelper), new PropertyMetadata(OSKType.None));
+
 
 
 
@@ -177,15 +204,37 @@ namespace YoYo.Toolkit.Input
 #if DEBUG
             return;
 #endif
-            try
+            switch (GetOskType(passwordBox))
             {
-                StartOsk();
+                case OSKType.None:
+                    break;
+                case OSKType.OSK:
+                    try
+                    {
+                        StartOsk();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorOccurred?.Invoke("打开虚拟键盘出错!", ex);
+                        //Log.Write("打开虚拟键盘出错!", ex);
+                    }
+                    break;
+                case OSKType.TabTip:
+                    try
+                    {
+                        StartTabOsk();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorOccurred?.Invoke("打开虚拟键盘出错!", ex);
+                        //Log.Write("打开虚拟键盘出错!", ex);
+                    }
+                    break;
+                default:
+                    break;
             }
-            catch (Exception ex)
-            {
-                ErrorOccurred?.Invoke("打开虚拟键盘出错!", ex);
-                //Log.Write("打开虚拟键盘出错!", ex);
-            }
+
+           
         }
         public static void StartOsk()
         {
